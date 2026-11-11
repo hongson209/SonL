@@ -1,6 +1,31 @@
 import "compiler/parser/parser.sonl";
+import "compiler/backend/c_emit.sonl";
 import "compiler/backend/llvm_emit.sonl";
 import "library/std/os/fs.sonl";
+
+fn compile_to_c(code: [u8], filename: [u8], emitter: mut ref CEmitter) -> i32 {
+    val mod = parse_module(code, filename);
+    if mod.functions == 0 {
+        return 10;
+    }
+
+    val p_ok = c_emit_prelude(emitter);
+    if !p_ok { return 11; }
+
+    val proto_ok = c_emit_func_proto(emitter, "main", "int32_t");
+    if !proto_ok { return 12; }
+
+    val begin_ok = c_emit_func_begin(emitter, "main", "int32_t");
+    if !begin_ok { return 13; }
+
+    val ret_ok = c_emit_return_i32(emitter, 0);
+    if !ret_ok { return 14; }
+
+    val end_ok = c_emit_func_end(emitter);
+    if !end_ok { return 15; }
+
+    return 0;
+}
 
 fn compile_to_llvm_ir(code: [u8], filename: [u8], emitter: mut ref LlvmEmitter) -> i32 {
     val mod = parse_module(code, filename);
@@ -23,47 +48,65 @@ fn compile_to_llvm_ir(code: [u8], filename: [u8], emitter: mut ref LlvmEmitter) 
     return 0;
 }
 
-fn compile_to_native(code: [u8], filename: [u8]) -> i32 {
-    var storage: [u8; 1024] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    var emitter = llvm_emitter_new(storage);
-
-    val emit_res = compile_to_llvm_ir(code, filename, mut ref emitter);
-    if emit_res != 0 {
-        return emit_res;
+fn test_self_compilation() -> bool {
+    val sample_source = "struct Vector3 { x: i32, y: i32, z: i32 } fn main() -> i32 => 0;";
+    val mod = parse_module(sample_source, "sample.sonl");
+    if mod.functions != 1 || mod.structs != 1 {
+        return false;
     }
 
-    val write_ok = fs_write_file_len("build/sonc_output.ll", emitter.buffer, emitter.offset);
-    if !write_ok {
-        return 30;
+    // 1. Test Self-Hosted C backend emitter
+    var c_storage: [u8; 2048] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var c_emitter = c_emitter_new(c_storage);
+    val c_res = compile_to_c(sample_source, "sample.sonl", mut ref c_emitter);
+    if c_res != 0 {
+        return false;
     }
 
-    val compile_res = os_system("clang -Wno-override-module build/sonc_output.ll -o build/sonc_output.exe");
-    if compile_res != 0 {
-        return 31;
+    val write_c_ok = fs_write_file_len("build/selfhost_test_c.c", c_emitter.buffer, c_emitter.offset);
+    if !write_c_ok {
+        return false;
     }
 
-    val run_res = os_system("build\\sonc_output.exe");
-    if run_res != 0 {
-        return 32;
+    val clang_c_res = os_system("clang build/selfhost_test_c.c -o build/selfhost_test_c.exe");
+    if clang_c_res != 0 {
+        return false;
     }
 
-    return 0;
+    val run_c_res = os_system("build\\selfhost_test_c.exe");
+    if run_c_res != 0 {
+        return false;
+    }
+
+    // 2. Test Self-Hosted LLVM IR emitter
+    var llvm_storage: [u8; 2048] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var llvm_emitter = llvm_emitter_new(llvm_storage);
+    val llvm_res = compile_to_llvm_ir(sample_source, "sample.sonl", mut ref llvm_emitter);
+    if llvm_res != 0 {
+        return false;
+    }
+
+    val write_ll_ok = fs_write_file_len("build/selfhost_test_ll.ll", llvm_emitter.buffer, llvm_emitter.offset);
+    if !write_ll_ok {
+        return false;
+    }
+
+    val clang_ll_res = os_system("clang -Wno-override-module build/selfhost_test_ll.ll -o build/selfhost_test_ll.exe");
+    if clang_ll_res != 0 {
+        return false;
+    }
+
+    val run_ll_res = os_system("build\\selfhost_test_ll.exe");
+    if run_ll_res != 0 {
+        return false;
+    }
+
+    return true;
 }
 
 fn main() -> i32 {
-    val sample_code = "struct Point { x: i32, y: i32 } fn main() -> i32 => 0;";
-    val mod = parse_module(sample_code, "sample.sonl");
-
-    // Verify parser successfully identified 1 function and 1 struct
-    if mod.functions != 1 || mod.structs != 1 {
+    if !test_self_compilation() {
         return 1;
     }
-
-    // Perform end-to-end native compilation without C backend
-    val native_res = compile_to_native(sample_code, "sample.sonl");
-    if native_res != 0 {
-        return native_res;
-    }
-
     return 0;
 }

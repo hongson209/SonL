@@ -1,0 +1,35 @@
+import "library/std/os/fs.sonl";
+
+fn test_fs_read() -> bool {
+    val test_path = "build/test_read_sample.txt";
+    val sample_text = "SonLang Self-Hosting File I/O Verified";
+
+    val write_ok = fs_write_file(test_path, sample_text);
+    if !write_ok {
+        return false;
+    }
+
+    val sz = fs_file_size(test_path);
+    if sz != (sample_text.len as i64) {
+        return false;
+    }
+
+    var read_buf: [u8; 64] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    val bytes_read = fs_read_file(test_path, read_buf);
+    if bytes_read != (sample_text.len as i64) {
+        return false;
+    }
+
+    if read_buf[0] != (83 as u8) || read_buf[1] != (111 as u8) { // "So"
+        return false;
+    }
+
+    return true;
+}
+
+fn main() -> i32 {
+    if !test_fs_read() {
+        return 1;
+    }
+    return 0;
+}

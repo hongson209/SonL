@@ -1,0 +1,54 @@
+import "library/std/os/net.sonl";
+import "library/std/collections/hashmap.sonl";
+import "library/std/net/http.sonl";
+import "library/core/fmt.sonl";
+
+fn test_high_perf_api() -> bool {
+    // 1. Initialize Route HashMap
+    var router: HashMapI32 = hashmap_new_i32(16);
+    hashmap_insert_i32(mut ref router, 101, 1); // Route 101 -> Status Handler
+    hashmap_insert_i32(mut ref router, 102, 2); // Route 102 -> Metrics Handler
+    hashmap_insert_i32(mut ref router, 103, 3); // Route 103 -> Health Handler
+
+    if router.count != 3 {
+        return false;
+    }
+
+    // 2. Simulate dispatching route 101
+    val handler_id = hashmap_get_i32(ref router, 101);
+    if handler_id != 1 {
+        return false;
+    }
+
+    // 3. Construct HTTP Response
+    val raw_req = "GET /api/v1/status HTTP/1.1\r\nHost: localhost\r\n\r\n";
+    val parsed_req = http_parse_request(raw_req);
+    if !parsed_req.is_valid {
+        return false;
+    }
+
+    var resp_buf: [u8; 256] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var f = fmt_new(resp_buf);
+    fmt_write_str(mut ref f, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"status\":\"active\",\"language\":\"SonLang\"}");
+    val resp_len = fmt_finish(mut ref f);
+    if resp_len < 30 {
+        return false;
+    }
+
+    // 4. Test actual socket binding on port 8088
+    var server: TcpSocket = tcp_listen(8088);
+    if !server.is_connected {
+        return false;
+    }
+    tcp_close(mut ref server);
+
+    hashmap_destroy_i32(mut ref router);
+    return true;
+}
+
+fn main() -> i32 {
+    if !test_high_perf_api() {
+        return 1;
+    }
+    return 0;
+}

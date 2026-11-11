@@ -1,0 +1,42 @@
+import "library/std/mem/heap.sonl";
+
+pub struct FixedPool {
+    buffer: *mut u8,
+    block_size: usize,
+    capacity: usize,
+    allocated_count: usize,
+}
+
+pub fn pool_new(block_size: usize, capacity: usize) -> FixedPool {
+    val total_bytes = block_size * capacity;
+    val buf: *mut u8 = alloc(total_bytes, 8);
+    mem_set(buf, 0, total_bytes);
+
+    return FixedPool {
+        buffer: buf,
+        block_size: block_size,
+        capacity: capacity,
+        allocated_count: 0,
+    };
+}
+
+pub fn pool_alloc(pool: mut ref FixedPool) -> usize {
+    if pool.allocated_count >= pool.capacity {
+        return 0;
+    }
+    val offset = pool.allocated_count * pool.block_size;
+    pool.allocated_count = pool.allocated_count + 1;
+    return (pool.buffer as usize) + offset;
+}
+
+pub fn pool_reset(pool: mut ref FixedPool) -> void {
+    pool.allocated_count = 0;
+}
+
+pub fn pool_destroy(pool: mut ref FixedPool) -> void {
+    if pool.buffer as usize != 0 {
+        mem_free(pool.buffer, pool.block_size * pool.capacity);
+        pool.buffer = 0 as *mut u8;
+        pool.allocated_count = 0;
+    }
+}

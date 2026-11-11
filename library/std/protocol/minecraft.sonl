@@ -1,0 +1,68 @@
+import "library/std/protocol/varint.sonl";
+import "library/std/protocol/endian.sonl";
+import "library/core/fmt.sonl";
+
+pub struct MinecraftHandshake {
+    protocol_version: i32,
+    port: u16,
+    next_state: i32,
+    success: bool,
+}
+
+pub fn mc_parse_handshake(packet: [u8]) -> MinecraftHandshake {
+    var offset: usize = 0;
+
+    // 1. Packet Length
+    val pkt_len_res = varint_decode(packet, offset);
+    if !pkt_len_res.success {
+        return MinecraftHandshake { protocol_version: 0, port: 0, next_state: 0, success: false };
+    }
+    offset = offset + pkt_len_res.bytes_read;
+
+    // 2. Packet ID (0x00 for Handshake)
+    val pkt_id_res = varint_decode(packet, offset);
+    if !pkt_id_res.success || pkt_id_res.value != 0 {
+        return MinecraftHandshake { protocol_version: 0, port: 0, next_state: 0, success: false };
+    }
+    offset = offset + pkt_id_res.bytes_read;
+
+    // 3. Protocol Version
+    val proto_res = varint_decode(packet, offset);
+    if !proto_res.success {
+        return MinecraftHandshake { protocol_version: 0, port: 0, next_state: 0, success: false };
+    }
+    offset = offset + proto_res.bytes_read;
+
+    // 4. Server Hostname String
+    val host_len_res = varint_decode(packet, offset);
+    if !host_len_res.success {
+        return MinecraftHandshake { protocol_version: 0, port: 0, next_state: 0, success: false };
+    }
+    offset = offset + host_len_res.bytes_read + (host_len_res.value as usize);
+
+    // 5. Server Port (2 bytes Big Endian)
+    if offset + 2 > packet.len {
+        return MinecraftHandshake { protocol_version: 0, port: 0, next_state: 0, success: false };
+    }
+    val p_raw: u16 = ((packet[offset] as u16) << 8) | (packet[offset + 1] as u16);
+    offset = offset + 2;
+
+    // 6. Next State (1 = status, 2 = login)
+    val state_res = varint_decode(packet, offset);
+    if !state_res.success {
+        return MinecraftHandshake { protocol_version: 0, port: 0, next_state: 0, success: false };
+    }
+
+    return MinecraftHandshake {
+        protocol_version: proto_res.value,
+        port: p_raw,
+        next_state: state_res.value,
+        success: true,
+    };
+}
+
+pub fn mc_format_status_json(out_buf: [u8]) -> usize {
+    var f = fmt_new(out_buf);
+    fmt_write_str(mut ref f, "{\"version\":{\"name\":\"SCraft 1.20.4\",\"protocol\":765},\"players\":{\"max\":100,\"online\":7},\"description\":{\"text\":\"Official SCraft SonLang Server\"}}");
+    return fmt_finish(mut ref f);
+}

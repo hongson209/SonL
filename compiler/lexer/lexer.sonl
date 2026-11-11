@@ -19,6 +19,9 @@ pub union TokenKind {
     KwWhile,
     KwMatch,
     KwReturn,
+    KwExtern,
+    KwImport,
+    KwPub,
     Equal,
     EqEq,
     FatArrow,
@@ -27,6 +30,11 @@ pub union TokenKind {
     Minus,
     Star,
     Slash,
+    Amp,
+    Pipe,
+    Caret,
+    Tilde,
+    Bang,
     Colon,
     Semicolon,
     Comma,
@@ -145,6 +153,11 @@ pub fn lexer_next(lex: NativeLexer) -> TokenResult {
     if c == 125 as u8 { return TokenResult { token: Token { kind: TokenKind.RBrace, loc: loc }, next_lex: adv }; }
     if c == 91 as u8 { return TokenResult { token: Token { kind: TokenKind.LBracket, loc: loc }, next_lex: adv }; }
     if c == 93 as u8 { return TokenResult { token: Token { kind: TokenKind.RBracket, loc: loc }, next_lex: adv }; }
+    if c == 38 as u8 { return TokenResult { token: Token { kind: TokenKind.Amp, loc: loc }, next_lex: adv }; }
+    if c == 124 as u8 { return TokenResult { token: Token { kind: TokenKind.Pipe, loc: loc }, next_lex: adv }; }
+    if c == 94 as u8 { return TokenResult { token: Token { kind: TokenKind.Caret, loc: loc }, next_lex: adv }; }
+    if c == 126 as u8 { return TokenResult { token: Token { kind: TokenKind.Tilde, loc: loc }, next_lex: adv }; }
+    if c == 33 as u8 { return TokenResult { token: Token { kind: TokenKind.Bang, loc: loc }, next_lex: adv }; }
 
     // Two character tokens: ==, =>, ->
     if c == 61 as u8 { // '='
@@ -188,6 +201,18 @@ pub fn lexer_next(lex: NativeLexer) -> TokenResult {
         }
         val id_len = id_lex.cursor - start_cursor;
 
+        // pub
+        if id_len == 3 && l.source[start_cursor] == 112 as u8 && l.source[start_cursor + 1] == 117 as u8 && l.source[start_cursor + 2] == 98 as u8 {
+            return TokenResult { token: Token { kind: TokenKind.KwPub, loc: loc }, next_lex: id_lex };
+        }
+        // import
+        if id_len == 6 && l.source[start_cursor] == 105 as u8 && l.source[start_cursor + 1] == 109 as u8 {
+            return TokenResult { token: Token { kind: TokenKind.KwImport, loc: loc }, next_lex: id_lex };
+        }
+        // extern
+        if id_len == 6 && l.source[start_cursor] == 101 as u8 && l.source[start_cursor + 1] == 120 as u8 {
+            return TokenResult { token: Token { kind: TokenKind.KwExtern, loc: loc }, next_lex: id_lex };
+        }
         // fn
         if id_len == 2 && l.source[start_cursor] == 102 as u8 && l.source[start_cursor + 1] == 110 as u8 {
             return TokenResult { token: Token { kind: TokenKind.KwFn, loc: loc }, next_lex: id_lex };

@@ -1,0 +1,62 @@
+import "library/std/protocol/endian.sonl";
+import "library/std/protocol/varint.sonl";
+
+fn test_protocol_primitives() -> bool {
+    // 1. Endianness test
+    val u16_val: u16 = 0x1234;
+    val u16_be = swap_u16(u16_val);
+    if u16_be != 0x3412 {
+        return false;
+    }
+
+    val u32_val: u32 = 0x12345678;
+    val u32_be = swap_u32(u32_val);
+    if u32_be != 0x78563412 {
+        return false;
+    }
+
+    // 2. VarInt test
+    var buf: [u8; 16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    
+    // Test 0
+    val w0 = varint_encode(0, buf);
+    if w0 != 1 || buf[0] != 0 {
+        return false;
+    }
+    val d0 = varint_decode(buf, 0);
+    if !d0.success || d0.value != 0 || d0.bytes_read != 1 {
+        return false;
+    }
+
+    // Test 300 (0x12c -> 0xAC 0x02)
+    val w300 = varint_encode(300, buf);
+    if w300 != 2 {
+        return false;
+    }
+    if buf[0] != 0xAC || buf[1] != 0x02 {
+        return false;
+    }
+    val d300 = varint_decode(buf, 0);
+    if !d300.success || d300.value != 300 || d300.bytes_read != 2 {
+        return false;
+    }
+
+    // Test 25565 (Minecraft default port: 25565 = 0x63DD -> 0xDD 0xC7 0x01)
+    val w_port = varint_encode(25565, buf);
+    if w_port != 3 {
+        return false;
+    }
+    val d_port = varint_decode(buf, 0);
+    if !d_port.success || d_port.value != 25565 || d_port.bytes_read != 3 {
+        return false;
+    }
+
+    return true;
+}
+
+fn main() -> i32 {
+    if !test_protocol_primitives() {
+        return 1;
+    }
+    return 0;
+}

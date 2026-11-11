@@ -1,0 +1,13 @@
+import "library/std/os/net.sonl";
+
+fn main() -> i32 {
+    val port: u16 = 8080;
+    var server: TcpSocket = tcp_listen(port);
+    if !server.is_connected {
+        return 1;
+    }
+
+    // Server socket is initialized, bound to 0.0.0.0:8080 and listening
+    tcp_close(mut ref server);
+    return 0;
+}

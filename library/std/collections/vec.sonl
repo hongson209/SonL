@@ -50,3 +50,80 @@ pub fn vec_contains_i32(v: ref Vec[i32], item: i32) -> bool {
     }
     return false;
 }
+
+import "library/std/mem/heap.sonl";
+
+pub struct DynamicVecI32 {
+    data: *mut i32,
+    length: usize,
+    capacity: usize,
+}
+
+pub fn dvec_new_i32(initial_cap: usize) -> DynamicVecI32 {
+    var cap = initial_cap;
+    if cap == 0 {
+        cap = 4;
+    }
+    val raw: *mut u8 = alloc(cap * 4, 4);
+    val ptr: *mut i32 = raw as *mut i32;
+
+    return DynamicVecI32 {
+        data: ptr,
+        length: 0,
+        capacity: cap,
+    };
+}
+
+pub fn dvec_push_i32(v: mut ref DynamicVecI32, item: i32) -> void {
+    if v.length >= v.capacity {
+        val old_bytes = v.capacity * 4;
+        val new_cap = v.capacity * 2;
+        val new_bytes = new_cap * 4;
+        val raw_old: *mut u8 = v.data as *mut u8;
+        val raw_new: *mut u8 = mem_realloc(raw_old, old_bytes, new_bytes);
+        v.data = raw_new as *mut i32;
+        v.capacity = new_cap;
+    }
+    v.data[v.length] = item;
+    v.length = v.length + 1;
+}
+
+pub fn dvec_get_i32(v: ref DynamicVecI32, idx: usize) -> i32 {
+    if idx >= v.length {
+        return 0;
+    }
+    return v.data[idx];
+}
+
+pub fn dvec_pop_i32(v: mut ref DynamicVecI32) -> i32 {
+    if v.length == 0 {
+        return 0;
+    }
+    v.length = v.length - 1;
+    return v.data[v.length];
+}
+
+pub fn dvec_remove_swap_i32(v: mut ref DynamicVecI32, idx: usize) -> i32 {
+    if idx >= v.length {
+        return 0;
+    }
+    val removed = v.data[idx];
+    v.length = v.length - 1;
+    if idx < v.length {
+        v.data[idx] = v.data[v.length];
+    }
+    return removed;
+}
+
+pub fn dvec_clear_i32(v: mut ref DynamicVecI32) -> void {
+    v.length = 0;
+}
+
+pub fn dvec_destroy_i32(v: mut ref DynamicVecI32) -> void {
+    if (v.data as usize) != 0 {
+        mem_free(v.data as *mut u8, v.capacity * 4);
+        v.data = 0 as *mut i32;
+        v.length = 0;
+        v.capacity = 0;
+    }
+}

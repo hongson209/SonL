@@ -1,23 +1,56 @@
 pub struct TcpSocket {
-    handle: i32,
+    handle: i64,
     port: u16,
     is_connected: bool,
 }
 
-pub fn tcp_listen(port: u16) -> TcpSocket => TcpSocket {
-    handle: 4,
-    port: port,
-    is_connected: true,
-};
+pub fn tcp_listen(port: u16) -> TcpSocket {
+    val h = son_net_listen(port);
+    return TcpSocket {
+        handle: h,
+        port: port,
+        is_connected: h >= 0,
+    };
+}
+
+pub fn tcp_accept(server: ref TcpSocket) -> TcpSocket {
+    if !server.is_connected {
+        return TcpSocket { handle: -1, port: 0, is_connected: false };
+    }
+    val client_h = son_net_accept(server.handle);
+    return TcpSocket {
+        handle: client_h,
+        port: server.port,
+        is_connected: client_h >= 0,
+    };
+}
 
 pub fn tcp_send(sock: ref TcpSocket, data: [u8]) -> usize {
     if !sock.is_connected {
         return 0;
     }
-    return data.len;
+    val res = son_net_send(sock.handle, data);
+    if res < 0 {
+        return 0;
+    }
+    return res as usize;
+}
+
+pub fn tcp_recv(sock: ref TcpSocket, buf: [u8]) -> usize {
+    if !sock.is_connected {
+        return 0;
+    }
+    val res = son_net_recv(sock.handle, buf);
+    if res < 0 {
+        return 0;
+    }
+    return res as usize;
 }
 
 pub fn tcp_close(sock: mut ref TcpSocket) -> void {
-    sock.is_connected = false;
-    sock.handle = -1;
+    if sock.is_connected {
+        son_net_close(sock.handle);
+        sock.is_connected = false;
+        sock.handle = -1;
+    }
 }

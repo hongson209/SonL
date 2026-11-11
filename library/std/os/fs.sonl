@@ -24,4 +24,8 @@ pub fn fs_write_file(path: [u8], content: [u8]) -> bool => son_fs_write_file(pat
 
 pub fn fs_write_file_len(path: [u8], content: [u8], len: usize) -> bool => son_fs_write_file_len(path, content, len);
 
+pub fn fs_file_size(path: [u8]) -> i64 => son_fs_file_size(path);
+
+pub fn fs_read_file(path: [u8], out_buf: [u8]) -> i64 => son_fs_read_file(path, out_buf);
+
 pub fn os_system(cmd: [u8]) -> i32 => son_os_system(cmd);

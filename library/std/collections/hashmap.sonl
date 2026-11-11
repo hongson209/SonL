@@ -1,0 +1,118 @@
+import "library/std/mem/heap.sonl";
+
+pub struct HashMapI32 {
+    keys: *mut i32,
+    values: *mut i32,
+    occupied: *mut u8,
+    capacity: usize,
+    count: usize,
+}
+
+pub fn hash_int(key: i32) -> usize {
+    var k: u32 = key as u32;
+    k = ((k >> 16) ^ k) * 0x45d9f3b;
+    k = ((k >> 16) ^ k) * 0x45d9f3b;
+    k = (k >> 16) ^ k;
+    return k as usize;
+}
+
+pub fn hashmap_new_i32(capacity: usize) -> HashMapI32 {
+    var cap = capacity;
+    if cap == 0 {
+        cap = 16;
+    }
+    val k_raw: *mut u8 = alloc(cap * 4, 4);
+    val v_raw: *mut u8 = alloc(cap * 4, 4);
+    val o_raw: *mut u8 = alloc(cap, 1);
+    mem_set(o_raw, 0, cap);
+
+    return HashMapI32 {
+        keys: k_raw as *mut i32,
+        values: v_raw as *mut i32,
+        occupied: o_raw,
+        capacity: cap,
+        count: 0,
+    };
+}
+
+pub fn hashmap_insert_i32(m: mut ref HashMapI32, key: i32, val_num: i32) -> bool {
+    if m.count >= (m.capacity * 3) / 4 {
+        return false;
+    }
+
+    val hash = hash_int(key);
+    var idx = hash % m.capacity;
+
+    var running = true;
+    while running {
+        if m.occupied[idx] == 0 as u8 {
+            m.keys[idx] = key;
+            m.values[idx] = val_num;
+            m.occupied[idx] = 1 as u8;
+            m.count = m.count + 1;
+            return true;
+        }
+        if m.keys[idx] == key {
+            m.values[idx] = val_num;
+            return true;
+        }
+        idx = (idx + 1) % m.capacity;
+    }
+    return false;
+}
+
+pub fn hashmap_get_i32(m: ref HashMapI32, key: i32) -> i32 {
+    val hash = hash_int(key);
+    var idx = hash % m.capacity;
+    var steps: usize = 0;
+
+    while steps < m.capacity {
+        if m.occupied[idx] == 0 as u8 {
+            return -1;
+        }
+        if m.keys[idx] == key {
+            return m.values[idx];
+        }
+        idx = (idx + 1) % m.capacity;
+        steps = steps + 1;
+    }
+    return -1;
+}
+
+pub fn hashmap_contains_i32(m: ref HashMapI32, key: i32) -> bool {
+    val res = hashmap_get_i32(m, key);
+    return res != -1;
+}
+
+pub fn hashmap_remove_i32(m: mut ref HashMapI32, key: i32) -> bool {
+    val hash = hash_int(key);
+    var idx = hash % m.capacity;
+    var steps: usize = 0;
+
+    while steps < m.capacity {
+        if m.occupied[idx] == 0 as u8 {
+            return false;
+        }
+        if m.keys[idx] == key {
+            m.occupied[idx] = 0 as u8;
+            m.count = m.count - 1;
+            return true;
+        }
+        idx = (idx + 1) % m.capacity;
+        steps = steps + 1;
+    }
+    return false;
+}
+
+pub fn hashmap_destroy_i32(m: mut ref HashMapI32) -> void {
+    if (m.keys as usize) != 0 {
+        mem_free(m.keys as *mut u8, m.capacity * 4);
+        mem_free(m.values as *mut u8, m.capacity * 4);
+        mem_free(m.occupied, m.capacity);
+        m.keys = 0 as *mut i32;
+        m.values = 0 as *mut i32;
+        m.occupied = 0 as *mut u8;
+        m.count = 0;
+        m.capacity = 0;
+    }
+}

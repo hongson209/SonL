@@ -1,0 +1,55 @@
+import "library/std/collections/hashmap.sonl";
+
+fn test_hashmap() -> bool {
+    var map: HashMapI32 = hashmap_new_i32(32);
+    if map.count != 0 {
+        return false;
+    }
+
+    hashmap_insert_i32(mut ref map, 10, 100);
+    hashmap_insert_i32(mut ref map, 25, 250);
+    hashmap_insert_i32(mut ref map, 42, 420);
+    hashmap_insert_i32(mut ref map, 100, 1000);
+    hashmap_insert_i32(mut ref map, 999, 9990);
+
+    if map.count != 5 {
+        return false;
+    }
+
+    // Verify lookup
+    if hashmap_get_i32(ref map, 10) != 100 { return false; }
+    if hashmap_get_i32(ref map, 25) != 250 { return false; }
+    if hashmap_get_i32(ref map, 42) != 420 { return false; }
+    if hashmap_get_i32(ref map, 100) != 1000 { return false; }
+    if hashmap_get_i32(ref map, 999) != 9990 { return false; }
+
+    // Test non-existent key
+    if hashmap_get_i32(ref map, 12345) != -1 { return false; }
+    if hashmap_contains_i32(ref map, 12345) { return false; }
+    if !hashmap_contains_i32(ref map, 42) { return false; }
+
+    // Overwrite existing key
+    hashmap_insert_i32(mut ref map, 42, 840);
+    if hashmap_get_i32(ref map, 42) != 840 || map.count != 5 {
+        return false;
+    }
+
+    // Remove key
+    val rm_ok = hashmap_remove_i32(mut ref map, 25);
+    if !rm_ok || map.count != 4 {
+        return false;
+    }
+    if hashmap_contains_i32(ref map, 25) {
+        return false;
+    }
+
+    hashmap_destroy_i32(mut ref map);
+    return true;
+}
+
+fn main() -> i32 {
+    if !test_hashmap() {
+        return 1;
+    }
+    return 0;
+}

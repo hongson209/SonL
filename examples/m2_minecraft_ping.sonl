@@ -1,0 +1,53 @@
+import "library/std/os/net.sonl";
+import "library/std/protocol/minecraft.sonl";
+import "library/std/protocol/varint.sonl";
+
+fn test_minecraft_ping_protocol() -> bool {
+    // 1. Synthesize a valid Minecraft Handshake packet (1.20.4 protocol 765, localhost, port 25565, next state 1)
+    var packet: [u8; 32] = [
+        16,              // Packet length (16 bytes)
+        0,               // Packet ID 0x00 (Handshake)
+        0xFD, 0x05,      // Protocol version 765 (VarInt: 0xFD 0x05)
+        9,               // Hostname length: 9
+        108, 111, 99, 97, 108, 104, 111, 115, 116, // "localhost"
+        0x63, 0xDD,      // Port 25565 in Big-Endian (0x63DD)
+        1                // Next State: 1 (Status)
+    ];
+
+    val hs = mc_parse_handshake(packet);
+    if !hs.success {
+        return false;
+    }
+    if hs.protocol_version != 765 {
+        return false;
+    }
+    if hs.port != 25565 {
+        return false;
+    }
+    if hs.next_state != 1 {
+        return false;
+    }
+
+    // 2. Format JSON Status Response
+    var json_buf: [u8; 256] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    val json_len = mc_format_status_json(json_buf);
+    if json_len < 50 {
+        return false;
+    }
+
+    // 3. Test opening actual Minecraft server socket on port 25565
+    var mc_server = tcp_listen(25565);
+    if !mc_server.is_connected {
+        return false;
+    }
+    tcp_close(mut ref mc_server);
+
+    return true;
+}
+
+fn main() -> i32 {
+    if !test_minecraft_ping_protocol() {
+        return 1;
+    }
+    return 0;
+}

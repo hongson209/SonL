@@ -1,0 +1,61 @@
+pub struct VarIntResult {
+    value: i32,
+    bytes_read: usize,
+    success: bool,
+}
+
+pub fn varint_encode(value: i32, out_buffer: [u8]) -> usize {
+    var v: u32 = value as u32;
+    var written: usize = 0;
+
+    var running = true;
+    while running {
+        if (v & 0xFFFFFF80) == 0 {
+            if written < out_buffer.len {
+                out_buffer[written] = (v & 0x7F) as u8;
+                written = written + 1;
+            }
+            running = false;
+        } else {
+            if written < out_buffer.len {
+                val byte_val = ((v & 0x7F) | 0x80) as u8;
+                out_buffer[written] = byte_val;
+                written = written + 1;
+            }
+            v = v >> 7;
+        }
+    }
+    return written;
+}
+
+pub fn varint_decode(buffer: [u8], offset: usize) -> VarIntResult {
+    var num_read: usize = 0;
+    var result: i32 = 0;
+    var running = true;
+    var success = true;
+
+    while running {
+        val curr_idx = offset + num_read;
+        if curr_idx >= buffer.len || num_read >= 5 {
+            success = false;
+            running = false;
+        } else {
+            val read_byte: u8 = buffer[curr_idx];
+            val val_7bit: i32 = (read_byte & 0x7F) as i32;
+            val shift: i32 = (num_read as i32) * 7;
+            result = result | (val_7bit << shift);
+
+            num_read = num_read + 1;
+
+            if (read_byte & 0x80) == 0 {
+                running = false;
+            }
+        }
+    }
+
+    return VarIntResult {
+        value: result,
+        bytes_read: num_read,
+        success: success,
+    };
+}

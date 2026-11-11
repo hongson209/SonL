@@ -1,0 +1,50 @@
+import "library/std/collections/vec.sonl";
+
+fn test_dynamic_vector() -> bool {
+    var v: DynamicVecI32 = dvec_new_i32(4);
+    if v.capacity != 4 || v.length != 0 {
+        return false;
+    }
+
+    // Push 10 elements to trigger automatic exponential capacity growth (4 -> 8 -> 16)
+    var i: i32 = 0;
+    while i < 10 {
+        dvec_push_i32(mut ref v, i * 10);
+        i = i + 1;
+    }
+
+    if v.length != 10 || v.capacity < 10 {
+        return false;
+    }
+
+    // Verify all 10 elements
+    if dvec_get_i32(ref v, 0) != 0 || dvec_get_i32(ref v, 5) != 50 || dvec_get_i32(ref v, 9) != 90 {
+        return false;
+    }
+
+    // Test pop
+    val last = dvec_pop_i32(mut ref v);
+    if last != 90 || v.length != 9 {
+        return false;
+    }
+
+    // Test remove_swap O(1)
+    val removed = dvec_remove_swap_i32(mut ref v, 1); // remove element at index 1 (value 10)
+    if removed != 10 || v.length != 8 {
+        return false;
+    }
+    // Now index 1 should hold the former last element (value 80)
+    if dvec_get_i32(ref v, 1) != 80 {
+        return false;
+    }
+
+    dvec_destroy_i32(mut ref v);
+    return true;
+}
+
+fn main() -> i32 {
+    if !test_dynamic_vector() {
+        return 1;
+    }
+    return 0;
+}

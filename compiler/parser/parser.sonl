@@ -26,6 +26,7 @@ pub struct ModuleAst {
     functions: usize,
     structs: usize,
     unions: usize,
+    externs: usize,
     imports: usize,
     generics: usize,
     total_decls: usize,
@@ -37,6 +38,7 @@ pub fn make_module_ast(filename: [u8]) -> ModuleAst => ModuleAst {
     functions: 0,
     structs: 0,
     unions: 0,
+    externs: 0,
     imports: 0,
     generics: 0,
     total_decls: 0,
@@ -82,6 +84,14 @@ pub fn parse_module(source: [u8], filename: [u8]) -> ModuleAst {
                 KwUnion => true,
                 _ => false,
             };
+            val is_extern = match res.token.kind {
+                KwExtern => true,
+                _ => false,
+            };
+            val is_import = match res.token.kind {
+                KwImport => true,
+                _ => false,
+            };
             val is_lbracket = match res.token.kind {
                 LBracket => true,
                 _ => false,
@@ -97,6 +107,14 @@ pub fn parse_module(source: [u8], filename: [u8]) -> ModuleAst {
             }
             if is_union {
                 mod.unions = mod.unions + 1;
+                mod.total_decls = mod.total_decls + 1;
+            }
+            if is_extern {
+                mod.externs = mod.externs + 1;
+                mod.total_decls = mod.total_decls + 1;
+            }
+            if is_import {
+                mod.imports = mod.imports + 1;
                 mod.total_decls = mod.total_decls + 1;
             }
             if is_lbracket {

@@ -58,7 +58,18 @@ $tests = @(
     "compiler/main.sonl",
     "benchmarks/workloads/01_integer_math/prime_sieve.sonl",
     "benchmarks/workloads/02_matrix/matrix_mult.sonl",
-    "benchmarks/workloads/03_sorting/quicksort.sonl"
+    "benchmarks/workloads/03_sorting/quicksort.sonl",
+    "tests/bootstrap/test_c_ffi.sonl",
+    "library/std/mem/heap.sonl",
+    "tests/bootstrap/test_heap.sonl",
+    "library/std/mem/pool.sonl",
+    "library/std/protocol/endian.sonl",
+    "library/std/protocol/varint.sonl",
+    "tests/bootstrap/test_protocol.sonl",
+    "tests/bootstrap/test_net_socket.sonl",
+    "examples/m1_echo_server.sonl",
+    "library/std/protocol/minecraft.sonl",
+    "examples/m2_minecraft_ping.sonl"
 )
 
 if (-not (Test-Path "build")) {
@@ -73,7 +84,7 @@ foreach ($t in $tests) {
 
     $src = Get-Content $t -Raw
     if ($src -match "fn main") {
-        clang build/t.c -o build/t.exe
+        clang build/t.c -o build/t.exe -lws2_32
         if ($LASTEXITCODE -ne 0) { throw "clang build failed on $t" }
         
         & build/t.exe

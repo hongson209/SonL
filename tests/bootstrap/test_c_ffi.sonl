@@ -1,0 +1,27 @@
+extern "C" {
+    fn abs(x: i32) -> i32;
+    fn sqrt(x: f64) -> f64;
+}
+
+fn test_c_ffi() -> bool {
+    val a: i32 = -42;
+    val res: i32 = abs(a);
+    if res != 42 {
+        return false;
+    }
+
+    val f: f64 = 16.0;
+    val root: f64 = sqrt(f);
+    if root < 3.99 || root > 4.01 {
+        return false;
+    }
+
+    return true;
+}
+
+fn main() -> i32 {
+    if !test_c_ffi() {
+        return 1;
+    }
+    return 0;
+}

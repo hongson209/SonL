@@ -1,0 +1,25 @@
+import "library/std/mem/heap.sonl";
+
+fn test_heap_allocation() -> bool {
+    val p: *mut u8 = alloc(128, 8);
+    if p as usize == 0 {
+        return false;
+    }
+
+    mem_set(p, 42, 128);
+
+    val p2: *mut u8 = mem_realloc(p, 128, 256);
+    if p2 as usize == 0 {
+        return false;
+    }
+
+    mem_free(p2, 256);
+    return true;
+}
+
+fn main() -> i32 {
+    if !test_heap_allocation() {
+        return 1;
+    }
+    return 0;
+}

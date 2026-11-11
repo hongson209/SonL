@@ -1,32 +1,69 @@
-pub struct AstType {
-    kind: i32,
+// SonLang Self-Hosted AST (Abstract Syntax Tree)
+
+pub struct AstTypeNode {
+    kind: i32,           // 1: void, 2: i32, 3: i64, 4: u8, 5: bool, 6: f64, 7: slice, 8: pointer, 9: custom
+    is_mut: bool,
     name: [u8],
 }
 
-pub struct AstExpr {
-    kind: i32,
+pub struct AstParamNode {
+    name: [u8],
+    type_kind: i32,
+    type_name: [u8],
+}
+
+pub struct AstFieldNode {
+    name: [u8],
+    type_kind: i32,
+    type_name: [u8],
+}
+
+pub struct AstExprNode {
+    kind: i32,           // 1: Int, 2: Float, 3: String, 4: Ident, 5: Binary, 6: Call, 7: Unary
     int_val: i64,
     text: [u8],
+    op: i32,             // Operator code
+    left_idx: usize,
+    right_idx: usize,
 }
 
-pub struct AstStmt {
-    kind: i32,
+pub struct AstStmtNode {
+    kind: i32,           // 1: VarDecl, 2: ValDecl, 3: Assign, 4: Return, 5: If, 6: While, 7: Expr
+    var_name: [u8],
+    type_name: [u8],
+    expr_idx: usize,
+}
+
+pub struct AstDeclNode {
+    kind: i32,           // 1: Fn, 2: Struct, 3: Union, 4: ExternFn, 5: Import
     name: [u8],
+    return_type_name: [u8],
+    param_count: usize,
+    field_count: usize,
+    is_pub: bool,
+    is_extern: bool,
 }
 
-pub struct AstDecl {
-    kind: i32,
-    name: [u8],
-}
-
-pub struct AstModule {
+pub struct AstModuleNode {
     filename: [u8],
-    decl_count: usize,
+    total_decls: usize,
+    total_functions: usize,
+    total_structs: usize,
+    total_externs: usize,
 }
 
-pub fn make_ast_module(filename: [u8]) -> AstModule {
-    return AstModule {
-        filename: filename,
-        decl_count: 0,
-    };
-}
+pub fn make_ast_type(kind: i32, name: [u8]) -> AstTypeNode => AstTypeNode {
+    kind: kind,
+    is_mut: false,
+    name: name,
+};
+
+pub fn make_ast_decl(kind: i32, name: [u8]) -> AstDeclNode => AstDeclNode {
+    kind: kind,
+    name: name,
+    return_type_name: "void",
+    param_count: 0,
+    field_count: 0,
+    is_pub: false,
+    is_extern: false,
+};
