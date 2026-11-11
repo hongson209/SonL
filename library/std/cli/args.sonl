@@ -1,0 +1,21 @@
+import "library/core/string.sonl";
+
+pub struct CliOption {
+    has_flag: bool,
+    value: [u8],
+}
+
+pub fn cli_has_flag(args_raw: [u8], flag: [u8]) -> bool {
+    return str_contains_char(args_raw, flag[0]);
+}
+
+pub fn cli_parse_port_or_default(args_raw: [u8], default_port: i32) -> i32 {
+    if args_raw.len == 0 {
+        return default_port;
+    }
+    val parsed = str_parse_i32(args_raw);
+    if parsed > 0 {
+        return parsed;
+    }
+    return default_port;
+}

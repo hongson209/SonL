@@ -1,0 +1,38 @@
+// Comprehensive verification of library/core/string.sonl
+import "library/core/string.sonl";
+
+fn main() -> i32 {
+    val text = "SonLang System 2026";
+
+    // 1. Check ASCII
+    if !str_is_ascii(text) {
+        return 1;
+    }
+
+    // 2. Check prefix and suffix
+    if !str_starts_with(text, "SonLang") {
+        return 2;
+    }
+    if !str_ends_with(text, "2026") {
+        return 3;
+    }
+
+    // 3. Find character index
+    val idx = str_find_char(text, 50 as u8); // '2'
+    if idx != 15 {
+        return 4;
+    }
+
+    // 4. Parse integer from string
+    val num_pos = str_parse_i32("42500");
+    if num_pos != 42500 {
+        return 5;
+    }
+
+    val num_neg = str_parse_i32("-1234");
+    if num_neg != 0 - 1234 {
+        return 6;
+    }
+
+    return 0;
+}

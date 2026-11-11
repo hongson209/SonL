@@ -1,0 +1,38 @@
+// Test hardware atomic primitives & import
+import "library/std/sync/atomic.sonl";
+
+fn main() -> i32 {
+    var atom = atomic_new_i32(100);
+    
+    if atomic_load_i32(ref atom) != 100 {
+        return 1;
+    }
+    
+    atomic_store_i32(mut ref atom, 200);
+    if atomic_load_i32(ref atom) != 200 {
+        return 2;
+    }
+    
+    val prev = atomic_fetch_add_i32(mut ref atom, 50);
+    if prev != 200 {
+        return 3;
+    }
+    if atomic_load_i32(ref atom) != 250 {
+        return 4;
+    }
+    
+    val cas_fail = atomic_cas_i32(mut ref atom, 999, 500);
+    if cas_fail {
+        return 5;
+    }
+    
+    val cas_ok = atomic_cas_i32(mut ref atom, 250, 500);
+    if !cas_ok {
+        return 6;
+    }
+    if atomic_load_i32(ref atom) != 500 {
+        return 7;
+    }
+    
+    return 0;
+}

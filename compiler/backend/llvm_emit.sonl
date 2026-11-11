@@ -1,0 +1,190 @@
+pub struct LlvmEmitter {
+    buffer: [u8],
+    offset: usize,
+}
+
+pub fn llvm_emitter_new(storage: [u8]) -> LlvmEmitter => LlvmEmitter {
+    buffer: storage,
+    offset: 0,
+};
+
+pub fn llvm_emit_byte(e: mut ref LlvmEmitter, b: u8) -> bool {
+    if e.offset >= e.buffer.len {
+        return false;
+    }
+    e.buffer[e.offset] = b;
+    e.offset = e.offset + 1;
+    return true;
+}
+
+pub fn llvm_emit_str(e: mut ref LlvmEmitter, text: [u8]) -> bool {
+    var i: usize = 0;
+    while i < text.len {
+        val ok = llvm_emit_byte(e, text[i]);
+        if !ok {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+pub fn llvm_emit_i32(e: mut ref LlvmEmitter, n: i32) -> bool {
+    if n == 0 {
+        return llvm_emit_byte(e, 48 as u8); // '0'
+    }
+    var num = n;
+    if num < 0 {
+        val s_ok = llvm_emit_byte(e, 45 as u8); // '-'
+        if !s_ok { return false; }
+        num = 0 - num;
+    }
+    var digits: [u8; 16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var count: usize = 0;
+    while num > 0 {
+        val rem = num % 10;
+        digits[count] = (48 + rem) as u8;
+        count = count + 1;
+        num = num / 10;
+    }
+    while count > 0 {
+        count = count - 1;
+        val b_ok = llvm_emit_byte(e, digits[count]);
+        if !b_ok { return false; }
+    }
+    return true;
+}
+
+pub fn llvm_emit_header(e: mut ref LlvmEmitter) -> bool {
+    return llvm_emit_str(e, "; ModuleID = 'SonLang Native Backend'\n\n");
+}
+
+pub fn llvm_emit_func_header(e: mut ref LlvmEmitter, name: [u8], ret_type: [u8]) -> bool {
+    val ok1 = llvm_emit_str(e, "define ");
+    val ok2 = llvm_emit_str(e, ret_type);
+    val ok3 = llvm_emit_str(e, " @");
+    val ok4 = llvm_emit_str(e, name);
+    val ok5 = llvm_emit_str(e, "() {\n");
+    return ok1 && ok2 && ok3 && ok4 && ok5;
+}
+
+pub fn llvm_emit_func_end(e: mut ref LlvmEmitter) -> bool {
+    return llvm_emit_str(e, "}\n\n");
+}
+
+pub fn llvm_emit_alloca_i32(e: mut ref LlvmEmitter, name: [u8]) -> bool {
+    val ok1 = llvm_emit_str(e, "    %");
+    val ok2 = llvm_emit_str(e, name);
+    val ok3 = llvm_emit_str(e, " = alloca i32, align 4\n");
+    return ok1 && ok2 && ok3;
+}
+
+pub fn llvm_emit_store_i32(e: mut ref LlvmEmitter, val_num: i32, var_name: [u8]) -> bool {
+    val ok1 = llvm_emit_str(e, "    store i32 ");
+    if !ok1 { return false; }
+    val ok2 = llvm_emit_i32(e, val_num);
+    if !ok2 { return false; }
+    val ok3 = llvm_emit_str(e, ", i32* %");
+    val ok4 = llvm_emit_str(e, var_name);
+    val ok5 = llvm_emit_str(e, ", align 4\n");
+    return ok3 && ok4 && ok5;
+}
+
+pub fn llvm_emit_load_i32(e: mut ref LlvmEmitter, reg: [u8], var_name: [u8]) -> bool {
+    val ok1 = llvm_emit_str(e, "    %");
+    val ok2 = llvm_emit_str(e, reg);
+    val ok3 = llvm_emit_str(e, " = load i32, i32* %");
+    val ok4 = llvm_emit_str(e, var_name);
+    val ok5 = llvm_emit_str(e, ", align 4\n");
+    return ok1 && ok2 && ok3 && ok4 && ok5;
+}
+
+pub fn llvm_emit_add_i32(e: mut ref LlvmEmitter, res: [u8], op1: [u8], op2: [u8]) -> bool {
+    val ok1 = llvm_emit_str(e, "    %");
+    val ok2 = llvm_emit_str(e, res);
+    val ok3 = llvm_emit_str(e, " = add nsw i32 %");
+    val ok4 = llvm_emit_str(e, op1);
+    val ok5 = llvm_emit_str(e, ", %");
+    val ok6 = llvm_emit_str(e, op2);
+    val ok7 = llvm_emit_str(e, "\n");
+    return ok1 && ok2 && ok3 && ok4 && ok5 && ok6 && ok7;
+}
+
+pub fn llvm_emit_sub_i32(e: mut ref LlvmEmitter, res: [u8], op1: [u8], op2: [u8]) -> bool {
+    val ok1 = llvm_emit_str(e, "    %");
+    val ok2 = llvm_emit_str(e, res);
+    val ok3 = llvm_emit_str(e, " = sub nsw i32 %");
+    val ok4 = llvm_emit_str(e, op1);
+    val ok5 = llvm_emit_str(e, ", %");
+    val ok6 = llvm_emit_str(e, op2);
+    val ok7 = llvm_emit_str(e, "\n");
+    return ok1 && ok2 && ok3 && ok4 && ok5 && ok6 && ok7;
+}
+
+pub fn llvm_emit_mul_i32(e: mut ref LlvmEmitter, res: [u8], op1: [u8], op2: [u8]) -> bool {
+    val ok1 = llvm_emit_str(e, "    %");
+    val ok2 = llvm_emit_str(e, res);
+    val ok3 = llvm_emit_str(e, " = mul nsw i32 %");
+    val ok4 = llvm_emit_str(e, op1);
+    val ok5 = llvm_emit_str(e, ", %");
+    val ok6 = llvm_emit_str(e, op2);
+    val ok7 = llvm_emit_str(e, "\n");
+    return ok1 && ok2 && ok3 && ok4 && ok5 && ok6 && ok7;
+}
+
+pub fn llvm_emit_icmp_eq(e: mut ref LlvmEmitter, res: [u8], op1: [u8], op2: [u8]) -> bool {
+    val ok1 = llvm_emit_str(e, "    %");
+    val ok2 = llvm_emit_str(e, res);
+    val ok3 = llvm_emit_str(e, " = icmp eq i32 %");
+    val ok4 = llvm_emit_str(e, op1);
+    val ok5 = llvm_emit_str(e, ", %");
+    val ok6 = llvm_emit_str(e, op2);
+    val ok7 = llvm_emit_str(e, "\n");
+    return ok1 && ok2 && ok3 && ok4 && ok5 && ok6 && ok7;
+}
+
+pub fn llvm_emit_br_cond(e: mut ref LlvmEmitter, cond: [u8], then_l: [u8], else_l: [u8]) -> bool {
+    val ok1 = llvm_emit_str(e, "    br i1 %");
+    val ok2 = llvm_emit_str(e, cond);
+    val ok3 = llvm_emit_str(e, ", label %");
+    val ok4 = llvm_emit_str(e, then_l);
+    val ok5 = llvm_emit_str(e, ", label %");
+    val ok6 = llvm_emit_str(e, else_l);
+    val ok7 = llvm_emit_str(e, "\n");
+    return ok1 && ok2 && ok3 && ok4 && ok5 && ok6 && ok7;
+}
+
+pub fn llvm_emit_br(e: mut ref LlvmEmitter, target: [u8]) -> bool {
+    val ok1 = llvm_emit_str(e, "    br label %");
+    val ok2 = llvm_emit_str(e, target);
+    val ok3 = llvm_emit_str(e, "\n");
+    return ok1 && ok2 && ok3;
+}
+
+pub fn llvm_emit_label(e: mut ref LlvmEmitter, label: [u8]) -> bool {
+    val ok1 = llvm_emit_str(e, label);
+    val ok2 = llvm_emit_str(e, ":\n");
+    return ok1 && ok2;
+}
+
+pub fn llvm_emit_ret(e: mut ref LlvmEmitter, ret_type: [u8], val_str: [u8]) -> bool {
+    val ok1 = llvm_emit_str(e, "    ret ");
+    val ok2 = llvm_emit_str(e, ret_type);
+    val ok3 = llvm_emit_str(e, " ");
+    val ok4 = llvm_emit_str(e, val_str);
+    val ok5 = llvm_emit_str(e, "\n");
+    return ok1 && ok2 && ok3 && ok4 && ok5;
+}
+
+pub fn llvm_emit_main_stub(e: mut ref LlvmEmitter, exit_code: i32) -> bool {
+    val h_ok = llvm_emit_header(e);
+    if !h_ok { return false; }
+
+    val fn_ok = llvm_emit_func_header(e, "main", "i32");
+    if !fn_ok { return false; }
+
+    val ret_ok = llvm_emit_ret(e, "i32", "0");
+    if !ret_ok { return false; }
+
+    return llvm_emit_func_end(e);
+}

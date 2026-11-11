@@ -1,0 +1,16 @@
+// Unit test for library/std/mem/allocator.sonl
+import "library/std/mem/allocator.sonl";
+
+fn main() -> i32 {
+    var block = heap_alloc(1024);
+    if !block.is_valid || block.size != 1024 {
+        return 1;
+    }
+
+    heap_free(mut ref block);
+    if block.is_valid || block.size != 0 {
+        return 2;
+    }
+
+    return 0;
+}

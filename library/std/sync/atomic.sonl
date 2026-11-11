@@ -1,0 +1,27 @@
+pub struct AtomicI32 {
+    value: i32,
+}
+
+pub fn atomic_new_i32(init_val: i32) -> AtomicI32 => AtomicI32 {
+    value: init_val,
+};
+
+pub fn atomic_load_i32(a: ref AtomicI32) -> i32 => a.value;
+
+pub fn atomic_store_i32(a: mut ref AtomicI32, new_val: i32) -> void {
+    a.value = new_val;
+}
+
+pub fn atomic_fetch_add_i32(a: mut ref AtomicI32, delta: i32) -> i32 {
+    val prev = a.value;
+    a.value = a.value + delta;
+    return prev;
+}
+
+pub fn atomic_cas_i32(a: mut ref AtomicI32, expected: i32, desired: i32) -> bool {
+    if a.value == expected {
+        a.value = desired;
+        return true;
+    }
+    return false;
+}

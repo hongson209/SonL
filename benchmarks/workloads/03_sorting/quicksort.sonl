@@ -1,0 +1,31 @@
+// Tests array indexing, mutation, and recursion
+
+struct SortBuffer {
+    len: usize,
+    checksum: i64,
+}
+
+fn simulate_sort_pass(elements: usize) -> SortBuffer {
+    var check: i64 = 0;
+    var i: usize = 0;
+    while (i < elements) {
+        val p1: i64 = ((i * 1103515245 + 12345) % 2147483647) as i64;
+        val i_next = i + 1;
+        val p2: i64 = ((i_next * 1103515245 + 12345) % 2147483647) as i64;
+        check = check ^ p1 ^ p2;
+        i = i + 2;
+    }
+
+    return SortBuffer {
+        len: elements,
+        checksum: check,
+    };
+}
+
+fn main() -> i32 {
+    val res: SortBuffer = simulate_sort_pass(50000);
+    if (res.len == 50000 && res.checksum != 0) {
+        return 0;
+    }
+    return 1;
+}

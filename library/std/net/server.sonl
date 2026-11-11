@@ -1,0 +1,28 @@
+import "library/core/string.sonl";
+import "library/core/fmt.sonl";
+import "library/std/net/http.sonl";
+
+pub struct Route {
+    path: [u8],
+    method: [u8],
+    status: i32,
+}
+
+pub struct Router {
+    routes_count: usize,
+}
+
+pub fn router_new() -> Router => Router {
+    routes_count: 0,
+};
+
+pub fn router_dispatch(raw_request: [u8]) -> HttpResponse {
+    val req = http_parse_request(raw_request);
+    if !req.is_valid {
+        return http_response_not_found();
+    }
+
+    // Default API Health Status JSON response
+    val json_resp = "{\"status\":\"healthy\",\"server\":\"SonHttp/1.0\"}";
+    return http_response_ok(json_resp);
+}

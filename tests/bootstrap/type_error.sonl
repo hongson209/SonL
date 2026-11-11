@@ -1,0 +1,4 @@
+fn test_errors() -> void {
+    val x: i32 = "invalid string";
+    x = 42;
+}

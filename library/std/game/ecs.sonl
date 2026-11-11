@@ -1,0 +1,22 @@
+pub struct Entity {
+    id: u32,
+    active: bool,
+}
+
+pub struct Position {
+    x: i32,
+    y: i32,
+    z: i32,
+}
+
+pub struct Velocity {
+    vx: i32,
+    vy: i32,
+    vz: i32,
+}
+
+pub fn ecs_update_single_position(p: mut ref Position, v: Velocity) -> void {
+    p.x = p.x + v.vx;
+    p.y = p.y + v.vy;
+    p.z = p.z + v.vz;
+}

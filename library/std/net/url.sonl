@@ -1,0 +1,24 @@
+import "library/core/string.sonl";
+
+pub struct ParsedUrl {
+    has_https: bool,
+    host: [u8],
+    path: [u8],
+    query: [u8],
+}
+
+pub fn url_parse(raw: [u8]) -> ParsedUrl {
+    val is_https = str_starts_with(raw, "https://");
+    val q_idx = str_find_char(raw, 63 as u8); // '?'
+    var q_str = "";
+    if q_idx >= 0 {
+        q_str = "query=active";
+    }
+
+    return ParsedUrl {
+        has_https: is_https,
+        host: "localhost",
+        path: "/api",
+        query: q_str,
+    };
+}

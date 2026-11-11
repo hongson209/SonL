@@ -1,0 +1,30 @@
+import "library/core/fmt.sonl";
+
+fn main() -> i32 {
+    var buf: [u8; 64] = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ];
+
+    var f = fmt_new(buf);
+    fmt_write_str(mut ref f, "Status: ");
+    fmt_write_i32(mut ref f, 200);
+    fmt_write_str(mut ref f, " OK");
+
+    val len = fmt_finish(ref f);
+    if len != 14 {
+        return 1;
+    }
+
+    // Check buffer prefix
+    if buf[0] != 83 as u8 { // 'S'
+        return 2;
+    }
+    if buf[8] != 50 as u8 { // '2'
+        return 3;
+    }
+
+    return 0;
+}

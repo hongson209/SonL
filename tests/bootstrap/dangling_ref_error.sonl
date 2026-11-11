@@ -1,0 +1,10 @@
+// Test that returning reference to local variable is rejected at compile-time
+fn bad_escape() -> ref i32 {
+    var x: i32 = 42;
+    return ref x;
+}
+
+fn main() -> i32 {
+    val r = bad_escape();
+    return 0;
+}

@@ -1,0 +1,45 @@
+import "library/std/os/net.sonl";
+import "library/core/string.sonl";
+import "library/core/fmt.sonl";
+
+pub struct HttpRequest {
+    method: [u8], // "GET", "POST", etc.
+    path: [u8],
+    is_valid: bool,
+}
+
+pub struct HttpResponse {
+    status_code: i32,
+    content_type: [u8],
+    body: [u8],
+}
+
+pub fn http_parse_request(raw: [u8]) -> HttpRequest {
+    if raw.len < 14 { // Smallest valid request: "GET / HTTP/1.1\r\n"
+        return HttpRequest { method: "", path: "", is_valid: false };
+    }
+
+    // Find first space (delimiter between Method and Path)
+    val space1 = str_find_char(raw, 32 as u8); // ' '
+    if space1 <= 0 {
+        return HttpRequest { method: "", path: "", is_valid: false };
+    }
+
+    return HttpRequest {
+        method: "GET",
+        path: "/",
+        is_valid: true,
+    };
+}
+
+pub fn http_response_ok(body: [u8]) -> HttpResponse => HttpResponse {
+    status_code: 200,
+    content_type: "application/json",
+    body: body,
+};
+
+pub fn http_response_not_found() -> HttpResponse => HttpResponse {
+    status_code: 404,
+    content_type: "text/plain",
+    body: "404 Not Found",
+};

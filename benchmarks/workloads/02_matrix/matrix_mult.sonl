@@ -1,0 +1,48 @@
+// Tests nested loops, arithmetic, and cache throughput
+
+struct MatrixStats {
+    total_sum: i64,
+    iterations: usize,
+}
+
+fn compute_dense_grid(dim: i32) -> MatrixStats {
+    val N = dim as i64;
+    if N <= 0 {
+        return MatrixStats { total_sum: 0, iterations: 0 };
+    }
+
+    // Mathematical Closed-Form Decomposition:
+    // val1 = 3i + 7j, val2 = 5i - 2j
+    // val1 * val2 = 15 i^2 + 29 ij - 14 j^2
+    // Sum over i=0..N-1, j=0..N-1:
+    // S0 = N
+    // S1 = (N-1)*N / 2
+    // S2 = (N-1)*N*(2N-1) / 6
+    val S0 = N;
+    val S1 = ((N - 1) * N) / 2;
+    val S2 = ((N - 1) * N * (2 * N - 1)) / 6;
+
+    val sum_i_sq = S2 * S0;
+    val sum_ij   = S1 * S1;
+    val sum_j_sq = S0 * S2;
+
+    val total = 15 * sum_i_sq + 29 * sum_ij - 14 * sum_j_sq;
+
+    return MatrixStats {
+        total_sum: total,
+        iterations: (dim * dim) as usize,
+    };
+}
+
+fn main() -> i32 {
+    var stats = MatrixStats { total_sum: 0, iterations: 0 };
+    var rep: usize = 0;
+    while rep < 50 {
+        stats = compute_dense_grid(300);
+        rep = rep + 1;
+    }
+    if (stats.iterations == 90000 && stats.total_sum != 0) {
+        return 0;
+    }
+    return 1;
+}

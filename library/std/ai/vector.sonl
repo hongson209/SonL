@@ -1,0 +1,49 @@
+import "library/std/mem/arena.sonl";
+import "library/std/math.sonl";
+
+pub struct VectorEntry {
+    id: u64,
+    dim: usize,
+}
+
+pub fn vec_dot_product(a: [i32], b: [i32]) -> i64 {
+    if a.len != b.len {
+        return 0;
+    }
+    var sum: i64 = 0;
+    var i: usize = 0;
+    while i < a.len {
+        val prod = (a[i] as i64) * (b[i] as i64);
+        sum = sum + prod;
+        i = i + 1;
+    }
+    return sum;
+}
+
+pub fn vec_magnitude_sq(a: [i32]) -> i64 {
+    var sum: i64 = 0;
+    var i: usize = 0;
+    while i < a.len {
+        val val_i = a[i] as i64;
+        sum = sum + (val_i * val_i);
+        i = i + 1;
+    }
+    return sum;
+}
+
+pub fn vec_cosine_similarity_scaled(a: [i32], b: [i32]) -> i64 {
+    val dot = vec_dot_product(a, b);
+    val mag_a_sq = vec_magnitude_sq(a);
+    val mag_b_sq = vec_magnitude_sq(b);
+
+    if mag_a_sq == 0 || mag_b_sq == 0 {
+        return 0;
+    }
+
+    // Return fixed-point scaled dot product for exact zero-drift comparison
+    val denom = (mag_a_sq * mag_b_sq) / 10000;
+    if denom == 0 {
+        return dot;
+    }
+    return (dot * 10000) / denom;
+}

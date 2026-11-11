@@ -1,0 +1,21 @@
+pub struct PalInfo {
+    os_code: i32,     // 1: Windows, 2: Linux, 3: macOS, 4: BSD
+    pointer_width: usize, // 8 for 64-bit, 4 for 32-bit
+    page_size: usize,     // Typically 4096 bytes
+}
+
+pub fn pal_get_info() -> PalInfo {
+    return PalInfo {
+        os_code: 1, // Windows default host
+        pointer_width: 8,
+        page_size: 4096,
+    };
+}
+
+pub fn pal_is_windows(info: PalInfo) -> bool {
+    return info.os_code == 1;
+}
+
+pub fn pal_is_unix(info: PalInfo) -> bool {
+    return info.os_code == 2 || info.os_code == 3 || info.os_code == 4;
+}

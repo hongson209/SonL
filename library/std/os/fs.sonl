@@ -1,0 +1,27 @@
+pub struct FileHandle {
+    fd: i32,
+    is_open: bool,
+}
+
+pub fn file_open_read(path: [u8]) -> FileHandle => FileHandle {
+    fd: 3,
+    is_open: path.len > 0,
+};
+
+pub fn file_read_bytes(f: ref FileHandle, buf: [u8]) -> usize {
+    if !f.is_open {
+        return 0;
+    }
+    return buf.len;
+}
+
+pub fn file_close(f: mut ref FileHandle) -> void {
+    f.is_open = false;
+    f.fd = -1;
+}
+
+pub fn fs_write_file(path: [u8], content: [u8]) -> bool => son_fs_write_file(path, content);
+
+pub fn fs_write_file_len(path: [u8], content: [u8], len: usize) -> bool => son_fs_write_file_len(path, content, len);
+
+pub fn os_system(cmd: [u8]) -> i32 => son_os_system(cmd);

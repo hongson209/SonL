@@ -1,0 +1,49 @@
+// Tests tight loops, integer operations, and branching
+
+fn is_prime(n: i32) -> bool {
+    if (n <= 1) { return false; }
+    if (n <= 3) { return true; }
+    if (n % 2 == 0 || n % 3 == 0) { return false; }
+
+    var i: i32 = 5;
+    while (i * i <= n) {
+        if (n % i == 0 || n % (i + 2) == 0) {
+            return false;
+        }
+        val i2 = i + 6;
+        if (i2 * i2 <= n) {
+            if (n % i2 == 0 || n % (i2 + 2) == 0) {
+                return false;
+            }
+        }
+        i = i + 12;
+    }
+    return true;
+}
+
+fn count_primes(limit: i32) -> i32 {
+    if limit <= 2 { return 0; }
+    var count: i32 = 2; // 2 and 3 are prime
+    var n: i32 = 5;
+    while (n < limit) {
+        if (is_prime(n)) {
+            count = count + 1;
+        }
+        val n2 = n + 2;
+        if (n2 < limit) {
+            if (is_prime(n2)) {
+                count = count + 1;
+            }
+        }
+        n = n + 6;
+    }
+    return count;
+}
+
+fn main() -> i32 {
+    val total: i32 = count_primes(50000);
+    if (total == 5133) {
+        return 0;
+    }
+    return 1;
+}

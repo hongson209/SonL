@@ -1,0 +1,33 @@
+import "library/std/crypto/crc32.sonl";
+import "library/std/net/url.sonl";
+import "library/std/collections/ring.sonl";
+import "library/std/sync/spinlock.sonl";
+import "library/std/math/matrix4.sonl";
+
+fn main() -> i32 {
+    // 1. Test CRC32
+    val test_str = "123456789";
+    val crc = crc32_calculate(test_str);
+    if crc == 0 {
+        return 1;
+    }
+
+    // 2. Test URL parser
+    val u = url_parse("https://localhost:8080/api?query=active");
+    if !u.has_https {
+        return 2;
+    }
+
+    // 3. Test Spinlock
+    var lock = spinlock_new();
+    if !spinlock_try_lock(mut ref lock) {
+        return 3;
+    }
+    spinlock_unlock(mut ref lock);
+
+    // 4. Test Matrix4
+    var mat = mat4_identity();
+    mat4_scale_uniform(mut ref mat, 2.0);
+
+    return 0;
+}

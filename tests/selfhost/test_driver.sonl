@@ -1,0 +1,36 @@
+union Calculation {
+    Add(i32),
+    Multiply(i32),
+    Reset,
+}
+
+struct Engine {
+    state: i32,
+    cycles: usize,
+}
+
+fn apply_step(eng: Engine, calc: Calculation) -> Engine => Engine {
+    state: match calc {
+        Add(amount) => eng.state + amount,
+        Multiply(factor) => eng.state * factor,
+        Reset => 0,
+    },
+    cycles: eng.cycles + 1,
+};
+
+fn main() -> i32 {
+    var eng = Engine { state: 10, cycles: 0 };
+
+    eng = apply_step(eng, Calculation.Add(5));       // 15
+    eng = apply_step(eng, Calculation.Multiply(2));  // 30
+    eng = apply_step(eng, Calculation.Add(12));      // 42
+
+    val banner = "SonLang Self-Host Verified";
+    val banner_len = banner.len;
+
+    if eng.state == 42 && eng.cycles == 3 && banner_len == 26 {
+        return 0;
+    } else {
+        return 1;
+    }
+}

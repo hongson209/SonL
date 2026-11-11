@@ -1,0 +1,38 @@
+// Tests: Type Inference, Expression-bodied functions, Condition without parens, Union constants
+
+union Option {
+    Some(i32),
+    None,
+}
+
+// Expression-bodied function (1-liner)
+fn add(a: i32, b: i32) -> i32 => a + b;
+
+fn multiply(a: i32, b: i32) -> i32 => a * b;
+
+fn main() -> i32 {
+    // Type inference on immutable 'val'
+    val a = 15;
+    val b = 27;
+    val sum = add(a, b); // 42
+
+    // Type inference on mutable 'var'
+    var counter = 0;
+    while counter < 5 {
+        counter = counter + 1;
+    }
+
+    // Type inference on strings & slices
+    val banner = "Compact SonLang Verified";
+    val len = banner.len;
+
+    // Union without empty parens
+    val none_opt = Option.None;
+
+    // If condition without parens
+    if sum == 42 && counter == 5 && len == 24 {
+        return 0;
+    } else {
+        return 1;
+    }
+}

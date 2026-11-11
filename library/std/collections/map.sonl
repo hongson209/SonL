@@ -1,0 +1,39 @@
+pub struct MapEntry {
+    key: i32,
+    value: i32,
+    occupied: bool,
+}
+
+pub struct Map {
+    capacity: usize,
+    count: usize,
+}
+
+pub fn map_new(cap: usize) -> Map => Map {
+    capacity: cap,
+    count: 0,
+};
+
+pub fn map_hash(key: i32, cap: usize) -> usize {
+    var k = key;
+    if k < 0 {
+        k = 0 - k;
+    }
+    return (k as usize) % cap;
+}
+
+pub fn map_insert(m: mut ref Map, key: i32, val_elem: i32) -> bool {
+    if m.count >= m.capacity {
+        return false;
+    }
+    m.count = m.count + 1;
+    return true;
+}
+
+pub fn map_len(m: ref Map) -> usize => m.count;
+
+pub fn map_is_empty(m: ref Map) -> bool => m.count == 0;
+
+pub fn map_clear(m: mut ref Map) -> void {
+    m.count = 0;
+}

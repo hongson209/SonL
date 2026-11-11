@@ -1,0 +1,68 @@
+pub struct SourceLoc {
+    filename: [u8],
+    line: usize,
+    column: usize,
+}
+
+pub union TokenKind {
+    Eof,
+    Identifier,
+    IntLiteral,
+    FloatLiteral,
+    StringLiteral,
+    CharLiteral,
+    KwVal,
+    KwVar,
+    KwFn,
+    KwStruct,
+    KwUnion,
+    KwIf,
+    KwElse,
+    KwWhile,
+    KwMatch,
+    KwReturn,
+    KwPub,
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Percent,
+    Caret,
+    Equal,
+    EqEq,
+    BangEq,
+    Less,
+    LessEq,
+    Greater,
+    GreaterEq,
+    Arrow,
+    FatArrow,
+    Colon,
+    Semicolon,
+    Comma,
+    Dot,
+    LParen,
+    RParen,
+    LBrace,
+    RBrace,
+    LBracket,
+    RBracket,
+}
+
+pub struct Token {
+    kind: TokenKind,
+    text: [u8],
+    loc: SourceLoc,
+}
+
+pub fn make_token(kind: TokenKind, text: [u8], loc: SourceLoc) -> Token => Token {
+    kind: kind,
+    text: text,
+    loc: loc,
+};
+
+pub fn make_loc(filename: [u8], line: usize, col: usize) -> SourceLoc => SourceLoc {
+    filename: filename,
+    line: line,
+    column: col,
+};

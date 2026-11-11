@@ -1,0 +1,30 @@
+pub struct Arena {
+    buffer: [u8],
+    offset: usize,
+    allocated_count: usize,
+}
+
+pub fn arena_new(storage: [u8]) -> Arena => Arena {
+    buffer: storage,
+    offset: 0,
+    allocated_count: 0,
+};
+
+pub fn arena_alloc(a: mut ref Arena, size: usize) -> bool {
+    if a.offset + size > a.buffer.len {
+        return false;
+    }
+
+    a.offset = a.offset + size;
+    a.allocated_count = a.allocated_count + 1;
+    return true;
+}
+
+pub fn arena_reset(a: mut ref Arena) -> void {
+    a.offset = 0;
+    a.allocated_count = 0;
+}
+
+pub fn arena_used(a: ref Arena) -> usize => a.offset;
+
+pub fn arena_remaining(a: ref Arena) -> usize => a.buffer.len - a.offset;

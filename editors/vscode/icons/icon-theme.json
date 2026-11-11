@@ -1,0 +1,10 @@
+{
+    "iconDefinitions": {
+        "_sonl_file": {
+            "iconPath": "./icons/sonlang.svg"
+        }
+    },
+    "fileExtensions": {
+        "sonl": "_sonl_file"
+    }
+}

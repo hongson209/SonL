@@ -1,0 +1,28 @@
+import "library/std/math.sonl";
+import "library/core/string.sonl";
+
+fn main() -> i32 {
+    // 1. Call imported math functions
+    val m = math_max_i32(100, 250);
+    if m != 250 {
+        return 1;
+    }
+
+    val abs_val = math_abs_i32(0 - 42);
+    if abs_val != 42 {
+        return 2;
+    }
+
+    // 2. Call imported string functions
+    val text = "SonLang Modules";
+    if !str_starts_with(text, "SonLang") {
+        return 3;
+    }
+
+    val parsed = str_parse_i32("777");
+    if parsed != 777 {
+        return 4;
+    }
+
+    return 0;
+}

@@ -1,0 +1,31 @@
+import "library/std/ai/vector.sonl";
+import "library/std/finance/orderbook.sonl";
+import "library/std/game/ecs.sonl";
+
+fn main() -> i32 {
+    // 1. Test AI Vector Similarity
+    var v1: [i32; 4] = [1, 2, 3, 4];
+    var v2: [i32; 4] = [1, 2, 3, 4];
+    val dot = vec_dot_product(v1, v2);
+    if dot != 30 {
+        return 1;
+    }
+
+    // 2. Test HFT Order Matching
+    val buy = Order { id: 101, price: 50000, quantity: 10, is_buy: true };
+    val trade = match_single_order(buy, 49900, 5);
+    if trade.executed_qty != 5 || trade.remaining_qty != 5 {
+        return 2;
+    }
+
+    // 3. Test Game ECS Entity Update
+    var pos = Position { x: 10, y: 20, z: 30 };
+    val vel = Velocity { vx: 5, vy: 0, vz: -5 };
+    ecs_update_single_position(mut ref pos, vel);
+
+    if pos.x != 15 || pos.z != 25 {
+        return 3;
+    }
+
+    return 0;
+}

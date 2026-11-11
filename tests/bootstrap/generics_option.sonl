@@ -1,0 +1,45 @@
+// Tests: Generic Tagged Unions Option[T] and Result[T, E] with static monomorphization
+
+union Option[T] {
+    Some(T),
+    None,
+}
+
+union Result[T, E] {
+    Ok(T),
+    Err(E),
+}
+
+fn unwrap_int(opt: Option[i32], default_val: i32) -> i32 => match opt {
+    Some(v) => v,
+    None => default_val,
+};
+
+fn main() -> i32 {
+    // 1. Generic Option instantiated with i32
+    val opt_a: Option[i32] = Option.Some(42);
+    val opt_none: Option[i32] = Option.None;
+
+    val val_a = unwrap_int(opt_a, 0); // 42
+    val val_none = unwrap_int(opt_none, 100); // 100
+
+    // 2. Generic Option instantiated with f64
+    val opt_f: Option[f64] = Option.Some(3.14);
+    val val_f = match opt_f {
+        Some(v) => v,
+        None => 0.0,
+    };
+
+    // 3. Generic Result instantiated with i32 and i32
+    val res_ok: Result[i32, i32] = Result.Ok(777);
+    val ok_num = match res_ok {
+        Ok(v) => v,
+        Err(e) => 0,
+    };
+
+    if val_a == 42 && val_none == 100 && val_f > 3.0 && ok_num == 777 {
+        return 0;
+    } else {
+        return 1;
+    }
+}

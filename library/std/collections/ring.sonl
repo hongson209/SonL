@@ -1,0 +1,34 @@
+pub struct RingBuffer {
+    capacity: usize,
+    head: usize,
+    tail: usize,
+    count: usize,
+}
+
+pub fn ring_new(capacity: usize) -> RingBuffer => RingBuffer {
+    capacity: capacity,
+    head: 0,
+    tail: 0,
+    count: 0,
+};
+
+pub fn ring_is_empty(r: ref RingBuffer) -> bool => r.count == 0;
+pub fn ring_is_full(r: ref RingBuffer) -> bool => r.count == r.capacity;
+
+pub fn ring_advance_tail(r: mut ref RingBuffer) -> bool {
+    if ring_is_full(r) {
+        return false;
+    }
+    r.tail = (r.tail + 1) % r.capacity;
+    r.count = r.count + 1;
+    return true;
+}
+
+pub fn ring_advance_head(r: mut ref RingBuffer) -> bool {
+    if ring_is_empty(r) {
+        return false;
+    }
+    r.head = (r.head + 1) % r.capacity;
+    r.count = r.count - 1;
+    return true;
+}

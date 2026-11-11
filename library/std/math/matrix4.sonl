@@ -1,0 +1,17 @@
+pub struct Matrix4 {
+    scale: f32,
+    offset_x: f32,
+    offset_y: f32,
+    offset_z: f32,
+}
+
+pub fn mat4_identity() -> Matrix4 => Matrix4 {
+    scale: 1.0,
+    offset_x: 0.0,
+    offset_y: 0.0,
+    offset_z: 0.0,
+};
+
+pub fn mat4_scale_uniform(m: mut ref Matrix4, s: f32) -> void {
+    m.scale = m.scale * s;
+}

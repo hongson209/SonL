@@ -1,0 +1,61 @@
+pub fn base64_encoded_len(input_len: usize) -> usize {
+    return ((input_len + 2) / 3) * 4;
+}
+
+pub fn base64_encode(src: [u8], out: [u8]) -> usize {
+    val table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    val expected_len = base64_encoded_len(src.len);
+    if out.len < expected_len {
+        return 0;
+    }
+
+    var i: usize = 0;
+    var o: usize = 0;
+
+    while i + 2 < src.len {
+        val b0 = src[i] as usize;
+        val b1 = src[i + 1] as usize;
+        val b2 = src[i + 2] as usize;
+
+        val idx0 = b0 / 4;
+        val idx1 = ((b0 % 4) * 16) + (b1 / 16);
+        val idx2 = ((b1 % 16) * 4) + (b2 / 64);
+        val idx3 = b2 % 64;
+
+        out[o] = table[idx0];
+        out[o + 1] = table[idx1];
+        out[o + 2] = table[idx2];
+        out[o + 3] = table[idx3];
+
+        i = i + 3;
+        o = o + 4;
+    }
+
+    // Trailing bytes
+    if i < src.len {
+        val rem = src.len - i;
+        val b0 = src[i] as usize;
+        var b1: usize = 0;
+        if rem == 2 {
+            b1 = src[i + 1] as usize;
+        }
+
+        val idx0 = b0 / 4;
+        val idx1 = ((b0 % 4) * 16) + (b1 / 16);
+
+        out[o] = table[idx0];
+        out[o + 1] = table[idx1];
+
+        if rem == 1 {
+            out[o + 2] = 61 as u8; // '='
+            out[o + 3] = 61 as u8; // '='
+        } else {
+            val idx2 = (b1 % 16) * 4;
+            out[o + 2] = table[idx2];
+            out[o + 3] = 61 as u8; // '='
+        }
+        o = o + 4;
+    }
+
+    return o;
+}

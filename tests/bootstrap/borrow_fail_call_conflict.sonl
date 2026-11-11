@@ -1,0 +1,8 @@
+// Expect failure: passing conflicting borrows to function call
+fn dummy(a: mut ref i32, b: mut ref i32) -> void {}
+
+fn main() -> i32 {
+    var x = 10;
+    dummy(mut ref x, mut ref x);
+    return 0;
+}

@@ -1,0 +1,34 @@
+// Tests: match as expression, match in 1-liner function, match with arms
+
+union Option {
+    Some(i32),
+    None,
+}
+
+// 1. Match directly inside an expression-bodied function!
+fn unwrap_or(opt: Option, default_val: i32) -> i32 => match opt {
+    Some(v) => v,
+    None => default_val,
+};
+
+fn main() -> i32 {
+    val opt_a = Option.Some(42);
+    val opt_b = Option.None;
+
+    // 2. Match as an expression assigned to val
+    val res_a = unwrap_or(opt_a, 0); // 42
+    val res_b = unwrap_or(opt_b, 100); // 100
+
+    val multiplier = match opt_a {
+        Some(v) => 2,
+        None => 1,
+    };
+
+    val doubled = res_a * multiplier; // 84
+
+    if res_a == 42 && res_b == 100 && doubled == 84 {
+        return 0;
+    } else {
+        return 1;
+    }
+}

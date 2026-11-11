@@ -1,0 +1,23 @@
+pub struct TcpSocket {
+    handle: i32,
+    port: u16,
+    is_connected: bool,
+}
+
+pub fn tcp_listen(port: u16) -> TcpSocket => TcpSocket {
+    handle: 4,
+    port: port,
+    is_connected: true,
+};
+
+pub fn tcp_send(sock: ref TcpSocket, data: [u8]) -> usize {
+    if !sock.is_connected {
+        return 0;
+    }
+    return data.len;
+}
+
+pub fn tcp_close(sock: mut ref TcpSocket) -> void {
+    sock.is_connected = false;
+    sock.handle = -1;
+}

@@ -1,0 +1,32 @@
+pub struct AstType {
+    kind: i32,
+    name: [u8],
+}
+
+pub struct AstExpr {
+    kind: i32,
+    int_val: i64,
+    text: [u8],
+}
+
+pub struct AstStmt {
+    kind: i32,
+    name: [u8],
+}
+
+pub struct AstDecl {
+    kind: i32,
+    name: [u8],
+}
+
+pub struct AstModule {
+    filename: [u8],
+    decl_count: usize,
+}
+
+pub fn make_ast_module(filename: [u8]) -> AstModule {
+    return AstModule {
+        filename: filename,
+        decl_count: 0,
+    };
+}

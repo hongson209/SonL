@@ -1,0 +1,25 @@
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+fn add_points(p1: Point, p2: Point) -> Point {
+    val res: Point = Point {
+        x: p1.x + p2.x,
+        y: p1.y + p2.y,
+    };
+    return res;
+}
+
+fn main() -> i32 {
+    val pt1: Point = Point { x: 10, y: 20 };
+    val pt2: Point = Point { x: 30, y: 40 };
+    val pt3: Point = add_points(pt1, pt2);
+
+    val total: i32 = pt3.x + pt3.y;
+    if (total == 100) {
+        return 0;
+    } else {
+        return 1;
+    }
+}

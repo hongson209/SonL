@@ -1,0 +1,31 @@
+pub struct Instant {
+    ticks: i64,
+}
+
+pub struct Duration {
+    nanos: i64,
+    millis: i64,
+}
+
+// Built-in OS primitives for time
+pub fn instant_now() -> Instant => Instant {
+    ticks: son_time_now_ticks(),
+};
+
+pub fn duration_between(start: Instant, end: Instant) -> Duration {
+    val diff = end.ticks - start.ticks;
+    val freq = son_time_frequency();
+    if freq <= 0 {
+        return Duration { nanos: 0, millis: 0 };
+    }
+    val ms = (diff * 1000) / freq;
+    val ns = (diff * 1000000000) / freq;
+    return Duration {
+        nanos: ns,
+        millis: ms,
+    };
+}
+
+pub fn sleep_ms(ms: u32) -> void {
+    son_sleep_ms(ms);
+}

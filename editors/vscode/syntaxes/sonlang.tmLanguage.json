@@ -1,0 +1,132 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "SonLang",
+    "scopeName": "source.sonl",
+    "patterns": [
+        { "include": "#comments" },
+        { "include": "#strings" },
+        { "include": "#keywords" },
+        { "include": "#types" },
+        { "include": "#constants" },
+        { "include": "#functions" },
+        { "include": "#operators" },
+        { "include": "#numbers" }
+    ],
+    "repository": {
+        "comments": {
+            "patterns": [
+                {
+                    "name": "comment.line.double-slash.sonl",
+                    "match": "//.*$"
+                }
+            ]
+        },
+        "strings": {
+            "patterns": [
+                {
+                    "name": "string.quoted.double.sonl",
+                    "begin": "\"",
+                    "end": "\"",
+                    "patterns": [
+                        {
+                            "name": "constant.character.escape.sonl",
+                            "match": "\\\\."
+                        }
+                    ]
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "keyword.control.sonl",
+                    "match": "\\b(if|else|while|match|return|import)\\b"
+                },
+                {
+                    "name": "keyword.declaration.sonl",
+                    "match": "\\b(val|var|fn|struct|union|pub)\\b"
+                },
+                {
+                    "name": "keyword.operator.borrow.sonl",
+                    "match": "\\b(mut\\s+ref|ref)\\b"
+                },
+                {
+                    "name": "keyword.operator.cast.sonl",
+                    "match": "\\bas\\b"
+                }
+            ]
+        },
+        "types": {
+            "patterns": [
+                {
+                    "name": "entity.name.type.primitive.sonl",
+                    "match": "\\b(i8|i16|i32|i64|u8|u16|u32|u64|isize|usize|f32|f64|bool|char|void|ptr)\\b"
+                },
+                {
+                    "name": "entity.name.type.custom.sonl",
+                    "match": "\\b[A-Z][a-zA-Z0-9_]*\\b"
+                }
+            ]
+        },
+        "constants": {
+            "patterns": [
+                {
+                    "name": "constant.language.boolean.sonl",
+                    "match": "\\b(true|false)\\b"
+                }
+            ]
+        },
+        "functions": {
+            "patterns": [
+                {
+                    "match": "\\bfn\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
+                    "captures": {
+                        "1": { "name": "entity.name.function.sonl" }
+                    }
+                },
+                {
+                    "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
+                    "captures": {
+                        "1": { "name": "entity.name.function.call.sonl" }
+                    }
+                }
+            ]
+        },
+        "operators": {
+            "patterns": [
+                {
+                    "name": "keyword.operator.arrow.sonl",
+                    "match": "(=>|->)"
+                },
+                {
+                    "name": "keyword.operator.comparison.sonl",
+                    "match": "(==|!=|<=|>=|<|>)"
+                },
+                {
+                    "name": "keyword.operator.assignment.sonl",
+                    "match": "(=)"
+                },
+                {
+                    "name": "keyword.operator.arithmetic.sonl",
+                    "match": "(\\+|\\-|\\*|\\/|%|\\^)"
+                },
+                {
+                    "name": "keyword.operator.logical.sonl",
+                    "match": "(\\!|&&|\\|\\|)"
+                }
+            ]
+        },
+        "numbers": {
+            "patterns": [
+                {
+                    "name": "constant.numeric.float.sonl",
+                    "match": "\\b\\d+\\.\\d+\\b"
+                },
+                {
+                    "name": "constant.numeric.integer.sonl",
+                    "match": "\\b\\d+\\b"
+                }
+            ]
+        }
+    }
+}

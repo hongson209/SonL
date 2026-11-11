@@ -1,0 +1,40 @@
+pub struct Order {
+    id: u64,
+    price: u64,
+    quantity: u32,
+    is_buy: bool,
+}
+
+pub struct TradeResult {
+    executed_qty: u32,
+    remaining_qty: u32,
+    trade_price: u64,
+}
+
+pub fn match_single_order(incoming: Order, resting_price: u64, resting_qty: u32) -> TradeResult {
+    if incoming.is_buy {
+        if incoming.price < resting_price {
+            return TradeResult { executed_qty: 0, remaining_qty: incoming.quantity, trade_price: 0 };
+        }
+    } else {
+        if incoming.price > resting_price {
+            return TradeResult { executed_qty: 0, remaining_qty: incoming.quantity, trade_price: 0 };
+        }
+    }
+
+    var exec: u32 = 0;
+    var rem: u32 = 0;
+    if incoming.quantity <= resting_qty {
+        exec = incoming.quantity;
+        rem = 0;
+    } else {
+        exec = resting_qty;
+        rem = incoming.quantity - resting_qty;
+    }
+
+    return TradeResult {
+        executed_qty: exec,
+        remaining_qty: rem,
+        trade_price: resting_price,
+    };
+}

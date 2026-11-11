@@ -1,0 +1,19 @@
+import "library/std/pal.sonl";
+import "library/core/string.sonl";
+
+pub struct ProcessEnv {
+    is_windows: bool,
+    is_unix: bool,
+}
+
+pub fn process_env() -> ProcessEnv {
+    val pal = pal_get_info();
+    return ProcessEnv {
+        is_windows: pal_is_windows(pal),
+        is_unix: pal_is_unix(pal),
+    };
+}
+
+pub fn process_exit(code: i32) -> i32 {
+    return code;
+}

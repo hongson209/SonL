@@ -1,0 +1,29 @@
+pub union Option[T] {
+    Some(T),
+    None,
+}
+
+pub union Result[T, E] {
+    Ok(T),
+    Err(E),
+}
+
+pub fn option_unwrap_or(opt: Option[i32], default_val: i32) -> i32 => match opt {
+    Some(v) => v,
+    None => default_val,
+};
+
+pub fn option_is_some(opt: Option[i32]) -> bool => match opt {
+    Some(v) => true,
+    None => false,
+};
+
+pub fn result_unwrap_or(res: Result[i32, i32], default_val: i32) -> i32 => match res {
+    Ok(v) => v,
+    Err(err) => default_val,
+};
+
+pub fn result_is_ok(res: Result[i32, i32]) -> bool => match res {
+    Ok(v) => true,
+    Err(err) => false,
+};

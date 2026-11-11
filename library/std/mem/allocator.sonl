@@ -1,0 +1,23 @@
+pub struct HeapBlock {
+    ptr_val: usize,
+    size: usize,
+    is_valid: bool,
+}
+
+pub fn heap_alloc(size: usize) -> HeapBlock {
+    val p = son_heap_alloc(size);
+    return HeapBlock {
+        ptr_val: p,
+        size: size,
+        is_valid: p != 0,
+    };
+}
+
+pub fn heap_free(block: mut ref HeapBlock) -> void {
+    if block.is_valid {
+        son_heap_free(block.ptr_val);
+        block.is_valid = false;
+        block.ptr_val = 0;
+        block.size = 0;
+    }
+}

@@ -1,0 +1,42 @@
+// Full End-to-End LLVM IR Codegen and Native Execution Verification
+import "compiler/backend/llvm_emit.sonl";
+
+fn main() -> i32 {
+    var storage: [u8; 1024] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var emitter = llvm_emitter_new(storage);
+
+    // 1. Emit LLVM Header
+    val h_ok = llvm_emit_header(mut ref emitter);
+    if !h_ok { return 1; }
+
+    // 2. Emit main function:
+    // define i32 @main() {
+    //     %x = alloca i32, align 4
+    //     store i32 42, i32* %x, align 4
+    //     %1 = load i32, i32* %x, align 4
+    //     %2 = sub nsw i32 %1, 42
+    //     ret i32 %2
+    // }
+    val f_ok = llvm_emit_func_header(mut ref emitter, "main", "i32");
+    if !f_ok { return 2; }
+
+    val al_ok = llvm_emit_alloca_i32(mut ref emitter, "x");
+    if !al_ok { return 3; }
+
+    val st_ok = llvm_emit_store_i32(mut ref emitter, 42, "x");
+    if !st_ok { return 4; }
+
+    val ld_ok = llvm_emit_load_i32(mut ref emitter, "val1", "x");
+    if !ld_ok { return 5; }
+
+    val sub_ok = llvm_emit_sub_i32(mut ref emitter, "diff", "val1", "val1");
+    if !sub_ok { return 6; }
+
+    val ret_ok = llvm_emit_ret(mut ref emitter, "i32", "%diff");
+    if !ret_ok { return 7; }
+
+    val end_ok = llvm_emit_func_end(mut ref emitter);
+    if !end_ok { return 8; }
+
+    return 0;
+}

@@ -1,0 +1,50 @@
+struct Entity {
+    id: u32,
+    pos_x: i32,
+    pos_y: i32,
+    vel_x: i32,
+    vel_y: i32,
+}
+
+struct GameWorld {
+    tick: u64,
+    player: Entity,
+}
+
+fn update_world(world: GameWorld) -> GameWorld {
+    var p = world.player;
+    p.pos_x = p.pos_x + p.vel_x;
+    p.pos_y = p.pos_y + p.vel_y;
+
+    return GameWorld {
+        tick: world.tick + 1,
+        player: p,
+    };
+}
+
+fn main() -> i32 {
+    var world = GameWorld {
+        tick: 0,
+        player: Entity {
+            id: 1,
+            pos_x: 0,
+            pos_y: 0,
+            vel_x: 5,
+            vel_y: 2,
+        },
+    };
+
+    // Simulate 60 ticks (1 second of game time)
+    var step: usize = 0;
+    while step < 60 {
+        world = update_world(world);
+        step = step + 1;
+    }
+
+    // After 60 ticks, pos_x should be 60 * 5 = 300, pos_y should be 60 * 2 = 120
+    if world.tick == 60 && world.player.pos_x == 300 && world.player.pos_y == 120 {
+        return 0;
+    }
+
+    return 1;
+}

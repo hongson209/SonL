@@ -1,0 +1,33 @@
+union Option {
+    Some(i32),
+    None,
+}
+
+fn unwrap_or(opt: Option, default_val: i32) -> i32 {
+    match opt {
+        Some(value) => {
+            return value;
+        },
+        None => {
+            return default_val;
+        },
+    }
+    return default_val;
+}
+
+fn main() -> i32 {
+    val some_val: Option = Option.Some(42);
+    val none_val: Option = Option.None();
+
+    val res1: i32 = unwrap_or(some_val, 0);
+    val res2: i32 = unwrap_or(none_val, 10);
+
+    val str: [u8] = "SonLang";
+    val length: usize = str.len;
+
+    if (res1 == 42 && res2 == 10 && length == 7) {
+        return 0;
+    } else {
+        return 1;
+    }
+}

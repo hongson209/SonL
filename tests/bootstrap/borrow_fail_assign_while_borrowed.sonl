@@ -1,0 +1,7 @@
+// Expect failure: mutating variable while borrowed
+fn main() -> i32 {
+    var x = 42;
+    val r = ref x;
+    x = 100;
+    return 0;
+}

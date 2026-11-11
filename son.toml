@@ -1,0 +1,11 @@
+// SonLang Package Manifest Format (son.toml)
+[package]
+name = "sonlang-project"
+version = "0.1.0"
+authors = ["Hong Son <hongson@local.dev>"]
+edition = "2026"
+entry = "src/main.sonl"
+
+[dependencies]
+# Dependencies can be path-based or git repositories
+# math_lib = { path = "library/std/math.sonl" }

@@ -1,0 +1,179 @@
+import "library/core/string.sonl";
+
+pub union JsonValue {
+    Null,
+    Bool(bool),
+    Number(i32),
+    String([u8]),
+    Array(usize),  // Element count
+    Object(usize), // Key-value pair count
+}
+
+pub struct JsonToken {
+    kind: i32,     // 0: EOF, 1: LBRACE, 2: RBRACE, 3: LBRACKET, 4: RBRACKET, 5: COLON, 6: COMMA, 7: STRING, 8: NUMBER, 9: TRUE, 10: FALSE, 11: NULL
+    start: usize,
+    len: usize,
+}
+
+pub struct JsonReader {
+    src: [u8],
+    pos: usize,
+}
+
+pub fn json_reader_new(src: [u8]) -> JsonReader => JsonReader {
+    src: src,
+    pos: 0,
+};
+
+fn json_skip_whitespace(r: mut ref JsonReader) -> void {
+    while r.pos < r.src.len {
+        val c = r.src[r.pos];
+        if c == 32 as u8 || c == 9 as u8 || c == 10 as u8 || c == 13 as u8 { // ' ', '\t', '\n', '\r'
+            r.pos = r.pos + 1;
+        } else {
+            return;
+        }
+    }
+}
+
+pub fn json_next_token(r: mut ref JsonReader) -> JsonToken {
+    json_skip_whitespace(r);
+
+    if r.pos >= r.src.len {
+        return JsonToken { kind: 0, start: r.pos, len: 0 };
+    }
+
+    val start = r.pos;
+    val c = r.src[r.pos];
+
+    if c == 123 as u8 { // '{'
+        r.pos = r.pos + 1;
+        return JsonToken { kind: 1, start: start, len: 1 };
+    }
+    if c == 125 as u8 { // '}'
+        r.pos = r.pos + 1;
+        return JsonToken { kind: 2, start: start, len: 1 };
+    }
+    if c == 91 as u8 { // '['
+        r.pos = r.pos + 1;
+        return JsonToken { kind: 3, start: start, len: 1 };
+    }
+    if c == 93 as u8 { // ']'
+        r.pos = r.pos + 1;
+        return JsonToken { kind: 4, start: start, len: 1 };
+    }
+    if c == 58 as u8 { // ':'
+        r.pos = r.pos + 1;
+        return JsonToken { kind: 5, start: start, len: 1 };
+    }
+    if c == 44 as u8 { // ','
+        r.pos = r.pos + 1;
+        return JsonToken { kind: 6, start: start, len: 1 };
+    }
+
+    // String: "..."
+    if c == 34 as u8 {
+        r.pos = r.pos + 1;
+        val str_start = r.pos;
+        while r.pos < r.src.len && r.src[r.pos] != 34 as u8 {
+            if r.src[r.pos] == 92 as u8 && r.pos + 1 < r.src.len { // '\'
+                r.pos = r.pos + 2;
+            } else {
+                r.pos = r.pos + 1;
+            }
+        }
+        val str_len = r.pos - str_start;
+        if r.pos < r.src.len {
+            r.pos = r.pos + 1; // Consume closing quote
+        }
+        return JsonToken { kind: 7, start: str_start, len: str_len };
+    }
+
+    // Number: '-' or digit
+    if (c >= 48 as u8 && c <= 57 as u8) || c == 45 as u8 {
+        r.pos = r.pos + 1;
+        while r.pos < r.src.len && (r.src[r.pos] >= 48 as u8 && r.src[r.pos] <= 57 as u8) {
+            r.pos = r.pos + 1;
+        }
+        return JsonToken { kind: 8, start: start, len: r.pos - start };
+    }
+
+    // Identifiers: true, false, null
+    if c == 116 as u8 && r.pos + 4 <= r.src.len { // 't'
+        r.pos = r.pos + 4;
+        return JsonToken { kind: 9, start: start, len: 4 };
+    }
+    if c == 102 as u8 && r.pos + 5 <= r.src.len { // 'f'
+        r.pos = r.pos + 5;
+        return JsonToken { kind: 10, start: start, len: 5 };
+    }
+    if c == 110 as u8 && r.pos + 4 <= r.src.len { // 'n'
+        r.pos = r.pos + 4;
+        return JsonToken { kind: 11, start: start, len: 4 };
+    }
+
+    // Unrecognized character
+    r.pos = r.pos + 1;
+    return JsonToken { kind: 0 - 1, start: start, len: 1 };
+}
+
+pub fn json_token_as_i32(src: [u8], tok: JsonToken) -> i32 {
+    if tok.kind != 8 || tok.len == 0 {
+        return 0;
+    }
+    var is_neg = false;
+    var start_idx = tok.start;
+    var end_idx = tok.start + tok.len;
+
+    if src[start_idx] == 45 as u8 {
+        is_neg = true;
+        start_idx = start_idx + 1;
+    }
+
+    var result: i32 = 0;
+    var i = start_idx;
+    while i < end_idx {
+        val ch = src[i];
+        if ch >= 48 as u8 && ch <= 57 as u8 {
+            val digit = (ch - 48 as u8) as i32;
+            result = result * 10 + digit;
+        }
+        i = i + 1;
+    }
+
+    if is_neg {
+        return 0 - result;
+    }
+    return result;
+}
+
+pub fn json_find_field(src: [u8], key: [u8]) -> JsonToken {
+    var reader = json_reader_new(src);
+    var tok = json_next_token(mut ref reader);
+
+    while tok.kind != 0 && tok.kind != 0 - 1 {
+        if tok.kind == 7 && tok.len == key.len {
+            // Check if string matches key
+            var matches = true;
+            var i: usize = 0;
+            while i < key.len {
+                if src[tok.start + i] != key[i] {
+                    matches = false;
+                }
+                i = i + 1;
+            }
+
+            if matches {
+                // Next must be COLON
+                val colon = json_next_token(mut ref reader);
+                if colon.kind == 5 {
+                    // Next is the value token
+                    return json_next_token(mut ref reader);
+                }
+            }
+        }
+        tok = json_next_token(mut ref reader);
+    }
+
+    return JsonToken { kind: 0, start: 0, len: 0 };
+}

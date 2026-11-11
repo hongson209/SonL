@@ -1,0 +1,23 @@
+pub fn crc32_calculate(data: [u8]) -> u32 {
+    var crc: u32 = 4294967295;
+    var i: usize = 0;
+
+    while i < data.len {
+        val b = data[i] as u32;
+        crc = crc ^ b;
+
+        var bit: usize = 0;
+        while bit < 8 {
+            if (crc % 2) != 0 {
+                crc = (crc / 2) ^ 3988292384;
+            } else {
+                crc = crc / 2;
+            }
+            bit = bit + 1;
+        }
+
+        i = i + 1;
+    }
+
+    return crc ^ 4294967295;
+}

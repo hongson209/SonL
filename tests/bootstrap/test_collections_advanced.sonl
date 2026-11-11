@@ -1,0 +1,51 @@
+import "library/std/collections/vec.sonl";
+import "library/std/collections/map.sonl";
+
+fn main() -> i32 {
+    // 1. Test Vec[i32]
+    var storage: [i32; 16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var v = vec_new_i32(storage);
+
+    vec_push_i32(mut ref v, 10);
+    vec_push_i32(mut ref v, 20);
+    vec_push_i32(mut ref v, 30);
+
+    if vec_len_i32(ref v) != 3 {
+        return 1;
+    }
+    if vec_get_i32(ref v, 1) != 20 {
+        return 2;
+    }
+    if !vec_contains_i32(ref v, 30) {
+        return 3;
+    }
+    if vec_contains_i32(ref v, 99) {
+        return 4;
+    }
+
+    val popped = vec_pop_i32(mut ref v);
+    if popped != 30 || vec_len_i32(ref v) != 2 {
+        return 5;
+    }
+
+    vec_clear_i32(mut ref v);
+    if !vec_is_empty_i32(ref v) {
+        return 6;
+    }
+
+    // 2. Test Map
+    var m = map_new(32);
+    map_insert(mut ref m, 101, 555);
+    map_insert(mut ref m, 202, 666);
+
+    if map_len(ref m) != 2 {
+        return 7;
+    }
+
+    map_clear(mut ref m);
+    if !map_is_empty(ref m) {
+        return 8;
+    }
+
+    return 0;
+}

@@ -1,0 +1,16 @@
+import "library/std/net/server.sonl";
+
+fn main() -> i32 {
+    val raw_req = "GET /api/v1/health HTTP/1.1\r\nHost: localhost\r\n\r\n";
+    val resp = router_dispatch(raw_req);
+
+    if resp.status_code != 200 {
+        return 1;
+    }
+
+    if resp.body.len == 0 {
+        return 2;
+    }
+
+    return 0;
+}

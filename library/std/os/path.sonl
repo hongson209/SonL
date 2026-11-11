@@ -1,0 +1,57 @@
+import "library/core/string.sonl";
+
+pub fn path_is_separator(c: u8) -> bool {
+    return c == 47 as u8 || c == 92 as u8; // '/' or '\\'
+}
+
+pub fn path_file_name(path: [u8]) -> [u8] {
+    if path.len == 0 {
+        return path;
+    }
+
+    var i = path.len;
+    while i > 0 {
+        i = i - 1;
+        if path_is_separator(path[i]) {
+            // Found separator
+            return path; // Returns path or slice
+        }
+    }
+    return path;
+}
+
+pub fn path_has_extension(path: [u8], ext: [u8]) -> bool {
+    return str_ends_with(path, ext);
+}
+
+pub fn path_join(base: [u8], part: [u8], out: [u8]) -> usize {
+    if base.len + part.len + 1 > out.len {
+        return 0;
+    }
+
+    var o: usize = 0;
+    var i: usize = 0;
+
+    // Copy base
+    while i < base.len {
+        out[o] = base[i];
+        o = o + 1;
+        i = i + 1;
+    }
+
+    // Add separator if base doesn't end with one
+    if base.len > 0 && !path_is_separator(base[base.len - 1]) {
+        out[o] = 47 as u8; // '/'
+        o = o + 1;
+    }
+
+    // Copy part
+    var p: usize = 0;
+    while p < part.len {
+        out[o] = part[p];
+        o = o + 1;
+        p = p + 1;
+    }
+
+    return o;
+}

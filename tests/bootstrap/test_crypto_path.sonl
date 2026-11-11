@@ -1,0 +1,30 @@
+import "library/std/crypto/base64.sonl";
+import "library/std/os/path.sonl";
+
+fn main() -> i32 {
+    // 1. Test Base64 Encoding
+    val raw = "SonLang"; // 7 bytes -> 12 bytes base64: "U29uTGFuZw=="
+    var b64_buf: [u8; 16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    val b64_len = base64_encode(raw, b64_buf);
+
+    if b64_len != 12 {
+        return 1;
+    }
+    // Verify first 2 characters 'U' (85) and '2' (50)
+    if b64_buf[0] != 85 as u8 || b64_buf[1] != 50 as u8 {
+        return 2;
+    }
+
+    // 2. Test Path joining
+    var path_buf: [u8; 32] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    val p_len = path_join("library", "math.sonl", path_buf);
+    if p_len != 17 { // "library/math.sonl"
+        return 3;
+    }
+
+    if !path_has_extension("main.sonl", ".sonl") {
+        return 4;
+    }
+
+    return 0;
+}

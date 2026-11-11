@@ -1,0 +1,22 @@
+pub struct Formatter {
+    bytes_written: usize,
+    buffer_capacity: usize,
+}
+
+pub fn formatter_new(capacity: usize) -> Formatter {
+    return Formatter {
+        bytes_written: 0,
+        buffer_capacity: capacity,
+    };
+}
+
+pub fn formatter_write_bytes(f: Formatter, count: usize) -> Formatter {
+    return Formatter {
+        bytes_written: f.bytes_written + count,
+        buffer_capacity: f.buffer_capacity,
+    };
+}
+
+pub fn formatter_is_full(f: Formatter) -> bool {
+    return f.bytes_written >= f.buffer_capacity;
+}

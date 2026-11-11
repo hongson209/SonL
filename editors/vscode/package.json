@@ -1,0 +1,44 @@
+{
+    "name": "sonlang",
+    "displayName": "SonLang",
+    "description": "Official language support and file icon recognition for SonLang (.sonl)",
+    "version": "0.3.0",
+    "publisher": "sonlang",
+    "main": "./extension.js",
+    "activationEvents": [
+        "onLanguage:sonlang"
+    ],
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sonlang/sonlang"
+    },
+    "engines": {
+        "vscode": "^1.75.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "icon": "icon.png",
+    "contributes": {
+        "languages": [
+            {
+                "id": "sonlang",
+                "aliases": ["SonLang", "sonlang", "sonl"],
+                "extensions": [".sonl"],
+                "configuration": "./language-configuration.json",
+                "icon": {
+                    "light": "./icons/sonlang.svg",
+                    "dark": "./icons/sonlang.svg"
+                }
+            }
+        ],
+        "grammars": [
+            {
+                "language": "sonlang",
+                "scopeName": "source.sonl",
+                "path": "./syntaxes/sonlang.tmLanguage.json"
+            }
+        ]
+    }
+}

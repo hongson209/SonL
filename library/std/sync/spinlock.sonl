@@ -1,0 +1,23 @@
+import "library/std/sync/atomic.sonl";
+
+pub struct Spinlock {
+    lock_state: AtomicI32,
+}
+
+pub fn spinlock_new() -> Spinlock => Spinlock {
+    lock_state: atomic_new_i32(0),
+};
+
+pub fn spinlock_try_lock(lock: mut ref Spinlock) -> bool {
+    val prev = atomic_fetch_add_i32(mut ref lock.lock_state, 1);
+    if prev == 0 {
+        return true;
+    }
+    // Already locked, revert
+    atomic_fetch_add_i32(mut ref lock.lock_state, 0 - 1);
+    return false;
+}
+
+pub fn spinlock_unlock(lock: mut ref Spinlock) -> void {
+    atomic_store_i32(mut ref lock.lock_state, 0);
+}

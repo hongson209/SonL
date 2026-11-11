@@ -1,0 +1,109 @@
+import "compiler/lexer/lexer.sonl";
+
+pub union DeclKind {
+    FunctionDecl,
+    StructDecl,
+    UnionDecl,
+    ImportDecl,
+}
+
+pub struct FunctionAst {
+    param_count: usize,
+    has_body: bool,
+    is_compact: bool,
+}
+
+pub struct StructAst {
+    field_count: usize,
+}
+
+pub struct DeclAst {
+    kind: DeclKind,
+}
+
+pub struct ModuleAst {
+    filename: [u8],
+    functions: usize,
+    structs: usize,
+    unions: usize,
+    imports: usize,
+    generics: usize,
+    total_decls: usize,
+    errors: usize,
+}
+
+pub fn make_module_ast(filename: [u8]) -> ModuleAst => ModuleAst {
+    filename: filename,
+    functions: 0,
+    structs: 0,
+    unions: 0,
+    imports: 0,
+    generics: 0,
+    total_decls: 0,
+    errors: 0,
+};
+
+pub struct ParserState {
+    lexer: NativeLexer,
+    has_error: bool,
+}
+
+pub fn parser_new(source: [u8], filename: [u8]) -> ParserState => ParserState {
+    lexer: lexer_new(source, filename),
+    has_error: false,
+};
+
+pub fn parse_module(source: [u8], filename: [u8]) -> ModuleAst {
+    var p = parser_new(source, filename);
+    var mod = make_module_ast(filename);
+    var running = true;
+
+    while running {
+        val res = lexer_next(p.lexer);
+        p.lexer = res.next_lex;
+
+        val is_eof = match res.token.kind {
+            Eof => true,
+            _ => false,
+        };
+
+        if is_eof {
+            running = false;
+        } else {
+            val is_fn = match res.token.kind {
+                KwFn => true,
+                _ => false,
+            };
+            val is_struct = match res.token.kind {
+                KwStruct => true,
+                _ => false,
+            };
+            val is_union = match res.token.kind {
+                KwUnion => true,
+                _ => false,
+            };
+            val is_lbracket = match res.token.kind {
+                LBracket => true,
+                _ => false,
+            };
+
+            if is_fn {
+                mod.functions = mod.functions + 1;
+                mod.total_decls = mod.total_decls + 1;
+            }
+            if is_struct {
+                mod.structs = mod.structs + 1;
+                mod.total_decls = mod.total_decls + 1;
+            }
+            if is_union {
+                mod.unions = mod.unions + 1;
+                mod.total_decls = mod.total_decls + 1;
+            }
+            if is_lbracket {
+                mod.generics = mod.generics + 1;
+            }
+        }
+    }
+
+    return mod;
+}

@@ -1,0 +1,29 @@
+# SonLang Git Ignore
+
+# Build & binary outputs
+*.exe
+*.o
+*.obj
+*.dll
+*.lib
+*.a
+*.pdb
+
+# Build & artifact directories
+build/
+bin/
+out/
+.cache/
+benchmarks/bin/
+Backup/
+github/
+
+# Extension packages
+editors/vscode/*.vsix
+
+# Generated Stage 0 intermediate C files during testing
+tests/bootstrap/*.c
+compiler/*.c
+compiler/*/*.c
+*.sonir
+

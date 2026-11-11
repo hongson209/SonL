@@ -1,0 +1,46 @@
+pub fn math_min_i32(a: i32, b: i32) -> i32 {
+    if a < b {
+        return a;
+    }
+    return b;
+}
+
+pub fn math_max_i32(a: i32, b: i32) -> i32 {
+    if a > b {
+        return a;
+    }
+    return b;
+}
+
+pub fn math_abs_i32(n: i32) -> i32 {
+    if n < 0 {
+        return 0 - n;
+    }
+    return n;
+}
+
+pub fn math_clamp_i32(input_val: i32, min_val: i32, max_val: i32) -> i32 {
+    if input_val < min_val {
+        return min_val;
+    }
+    if input_val > max_val {
+        return max_val;
+    }
+    return input_val;
+}
+
+pub fn math_dot_product(a: [i32], b: [i32]) -> i64 {
+    var min_len = a.len;
+    if b.len < a.len {
+        min_len = b.len;
+    }
+
+    var sum: i64 = 0;
+    var i: usize = 0;
+    while i < min_len {
+        val prod: i64 = (a[i] as i64) * (b[i] as i64);
+        sum = sum + prod;
+        i = i + 1;
+    }
+    return sum;
+}

@@ -1,0 +1,24 @@
+import "compiler/parser/parser.sonl";
+
+fn main() -> i32 {
+    val src = "union Option[T] { Some(T), None } struct Point { x: i32, y: i32 } fn add() -> i32 => 42;";
+    val mod = parse_module(src, "inline_test.sonl");
+
+    if mod.unions != 1 {
+        return 1;
+    }
+    if mod.generics != 1 {
+        return 2;
+    }
+    if mod.structs != 1 {
+        return 3;
+    }
+    if mod.functions != 1 {
+        return 4;
+    }
+    if mod.total_decls != 3 {
+        return 5;
+    }
+
+    return 0;
+}

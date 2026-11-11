@@ -1,0 +1,7 @@
+// Expect failure: multiple mutable borrows
+fn main() -> i32 {
+    var x = 42;
+    val r1 = mut ref x;
+    val r2 = mut ref x;
+    return 0;
+}

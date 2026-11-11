@@ -1,0 +1,41 @@
+union HttpMethod {
+    Get,
+    Post,
+    Put,
+    Delete,
+}
+
+struct HttpRequest {
+    method: HttpMethod,
+    path_len: usize,
+    status_code: i32,
+}
+
+fn handle_request(req: HttpRequest) -> i32 => match req.method {
+    Get => 200,
+    Post => 201,
+    Put => 200,
+    Delete => 204,
+};
+
+fn main() -> i32 {
+    val req_get = HttpRequest {
+        method: HttpMethod.Get,
+        path_len: 12,
+        status_code: 0,
+    };
+
+    val req_post = HttpRequest {
+        method: HttpMethod.Post,
+        path_len: 8,
+        status_code: 0,
+    };
+
+    val code1 = handle_request(req_get);
+    val code2 = handle_request(req_post);
+
+    if code1 == 200 && code2 == 201 {
+        return 0;
+    }
+    return 1;
+}

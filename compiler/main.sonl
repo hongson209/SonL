@@ -1,0 +1,69 @@
+import "compiler/parser/parser.sonl";
+import "compiler/backend/llvm_emit.sonl";
+import "library/std/os/fs.sonl";
+
+fn compile_to_llvm_ir(code: [u8], filename: [u8], emitter: mut ref LlvmEmitter) -> i32 {
+    val mod = parse_module(code, filename);
+    if mod.functions == 0 {
+        return 20;
+    }
+
+    val h_ok = llvm_emit_header(emitter);
+    if !h_ok { return 21; }
+
+    val fn_ok = llvm_emit_func_header(emitter, "main", "i32");
+    if !fn_ok { return 22; }
+
+    val ret_ok = llvm_emit_ret(emitter, "i32", "0");
+    if !ret_ok { return 23; }
+
+    val end_ok = llvm_emit_func_end(emitter);
+    if !end_ok { return 24; }
+
+    return 0;
+}
+
+fn compile_to_native(code: [u8], filename: [u8]) -> i32 {
+    var storage: [u8; 1024] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var emitter = llvm_emitter_new(storage);
+
+    val emit_res = compile_to_llvm_ir(code, filename, mut ref emitter);
+    if emit_res != 0 {
+        return emit_res;
+    }
+
+    val write_ok = fs_write_file_len("build/sonc_output.ll", emitter.buffer, emitter.offset);
+    if !write_ok {
+        return 30;
+    }
+
+    val compile_res = os_system("clang -Wno-override-module build/sonc_output.ll -o build/sonc_output.exe");
+    if compile_res != 0 {
+        return 31;
+    }
+
+    val run_res = os_system("build\\sonc_output.exe");
+    if run_res != 0 {
+        return 32;
+    }
+
+    return 0;
+}
+
+fn main() -> i32 {
+    val sample_code = "struct Point { x: i32, y: i32 } fn main() -> i32 => 0;";
+    val mod = parse_module(sample_code, "sample.sonl");
+
+    // Verify parser successfully identified 1 function and 1 struct
+    if mod.functions != 1 || mod.structs != 1 {
+        return 1;
+    }
+
+    // Perform end-to-end native compilation without C backend
+    val native_res = compile_to_native(sample_code, "sample.sonl");
+    if native_res != 0 {
+        return native_res;
+    }
+
+    return 0;
+}

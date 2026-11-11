@@ -1,0 +1,30 @@
+import "library/std/encoding/json.sonl";
+
+fn main() -> i32 {
+    val sample = "{\"name\": \"SonLang\", \"version\": 2026, \"active\": true}";
+
+    // Test 1: Find integer field
+    val ver_tok = json_find_field(sample, "version");
+    if ver_tok.kind != 8 {
+        return 1;
+    }
+
+    val ver_val = json_token_as_i32(sample, ver_tok);
+    if ver_val != 2026 {
+        return 2;
+    }
+
+    // Test 2: Find boolean field
+    val act_tok = json_find_field(sample, "active");
+    if act_tok.kind != 9 {
+        return 3;
+    }
+
+    // Test 3: Missing field returns EOF token (kind == 0)
+    val missing = json_find_field(sample, "not_found");
+    if missing.kind != 0 {
+        return 4;
+    }
+
+    return 0;
+}
