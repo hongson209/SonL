@@ -2,24 +2,42 @@
   <img src="icon.png" alt="SonLang Logo" width="180"/>
 </p>
 
-<h1 align="center">SonLang</h1>
+<h1 align="center">SonLang v1.2.0</h1>
 
 <p align="center">
   <strong>An Independent, High-Performance, AI-Native Systems Programming Language</strong>
 </p>
 
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=SonLang.sonlang"><img src="https://img.shields.io/badge/VS_Code_Extension-SonLang_0.2.0-red.svg" alt="VS Code Extension"/></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=SonLang.sonlang"><img src="https://img.shields.io/badge/VS_Code_Extension-SonLang_v0.3.0-red.svg" alt="VS Code Extension"/></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/Performance-Zero--Cost-brightgreen.svg" alt="Performance"/></a>
-  <a href="#memory-safety-model"><img src="https://img.shields.io/badge/Memory_Safety-Borrow_Checker_%2B_Arenas-blue.svg" alt="Safety"/></a>
-  <a href="#ai-native-architecture"><img src="https://img.shields.io/badge/AI--Native-Sub--10ms_AST_JSON--RPC-purple.svg" alt="AI Native"/></a>
-  <a href="#compiler-pipeline-and-self-hosting"><img src="https://img.shields.io/badge/Compiler-Self--Hosting_Deterministic-orange.svg" alt="Self-Hosting"/></a>
+  <a href="#memory-safety-model"><img src="https://img.shields.io/badge/Release-v1.2.0_Independent-blue.svg" alt="Release"/></a>
+  <a href="#native-self-host-backend"><img src="https://img.shields.io/badge/Backend-Native_x86--64_%2B_PE%2FELF-purple.svg" alt="Native Backend"/></a>
+  <a href="#ai-native-architecture"><img src="https://img.shields.io/badge/AI--Native-Tensor_%2B_Channel_%2B_DAG-brightgreen.svg" alt="AI Native"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0_%2F_MIT-lightgrey.svg" alt="License"/></a>
 </p>
 
 <p align="center">
   Official File Extension: <code>.sonl</code> | Unified CLI Driver: <code>son</code>
 </p>
+
+---
+
+## What's New in v1.2.0
+
+- 🚀 **100% C-Decoupled Native Machine Code Backend**:
+  - Direct x86-64 machine opcode emitter (`compiler/backend/x64_emit.sonl`).
+  - Native Windows PE32+ executable generator (`compiler/linker/pe.sonl`).
+  - Native Linux ELF64 binary generator (`compiler/linker/elf.sonl`).
+  - Direct OS kernel raw syscalls (`sys_write`, `sys_mmap`, `sys_exit`) and bare-metal entrypoint (`library/std/crt/crt0.sonl`) bypassing libc.
+- ⚡ **Expanded AI & Systems Standard Library**:
+  - **AI Tensor Engine (`library/std/ai/tensor.sonl`)**: 2D tensors, 32-byte AVX2 aligned allocation, $O(N^3)$ matrix multiplication, and ReLU.
+  - **Lock-Free MPSC Channel (`library/std/sync/channel.sonl`)**: Atomic ring-buffer multi-producer single-consumer pipeline.
+  - **DAG ComputeGraph (`library/std/ai/graph.sonl`)**: Declarative static memory execution graph for AI agents.
+  - **Binary Min/Max Heap Priority Queue (`library/std/collections/priority_queue.sonl`)**: $O(\log N)$ push/pop for Dijkstra/A* pathfinding and trading orderbooks.
+  - **Pure Cryptographic SHA-256 (`library/std/crypto/sha256.sonl`)**: FIPS 180-4 compliant cryptographic hasher.
+  - **Real OS TCP Sockets & Minecraft Protocol (`library/std/protocol/`)**: Big-Endian converters, 7-bit zigzag VarInt, and Minecraft handshake/ping.
+- 🧪 **Comprehensive Test Coverage**: 63 automated test suites verified at 100% PASS.
 
 ---
 
@@ -125,11 +143,13 @@ SonLang/
 │   ├── ast/                   # AST nodes and Token definitions
 │   ├── lexer/                 # Lexical analysis engine
 │   ├── parser/                # Recursive descent parser
-│   ├── backend/               # LLVM IR code generator
+│   ├── backend/               # Native x86-64 machine emitter, C99, and LLVM IR emitters
+│   ├── linker/                # Standalone PE32+ (Windows) and ELF64 (Linux) linkers
 │   └── main.sonl              # Compiler entrypoint
 ├── library/                   # Official Standard Library (.sonl)
 │   ├── core/                  # Core primitives (types, slice, string, fmt)
-│   └── std/                   # High-level modules (ai, finance, game, net, fs, crypto, mem)
+│   └── std/                   # High-level modules (ai, sync, collections, protocol, crypto, net, fs, mem)
+├── examples/                  # Production showcase examples (Echo server, Minecraft ping, High-perf API)
 ├── editors/                   # Editor tooling and IDE extensions
 │   └── vscode/                # Official VS Code Extension (syntax, branding, file icons)
 ├── docs/                      # Authoritative specifications
@@ -164,7 +184,7 @@ SonLang/
 ./son.ps1 emit-ir tests/bootstrap/hello.sonl     # Emit SSA SonIR
 ./son.ps1 emit-llvm tests/bootstrap/hello.sonl   # Emit LLVM IR
 
-# Execute full test suite across 47 workloads
+# Execute full test suite across 63 workloads
 ./son.ps1 test
 
 # Verify bit-for-bit self-hosting convergence
