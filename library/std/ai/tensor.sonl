@@ -1,0 +1,137 @@
+// SonLang Multi-Dimensional AI Tensor Engine
+// Designed for AI workloads: Neural Networks, Embeddings, Matrix Math & Signal Processing
+// Zero-allocation hot path, deterministic memory ownership
+
+import "library/std/mem/heap.sonl";
+
+pub struct Tensor2D {
+    data: *mut f64,
+    rows: usize,
+    cols: usize,
+    capacity: usize,
+}
+
+pub fn tensor_new(rows: usize, cols: usize) -> Tensor2D {
+    val total_elements = rows * cols;
+    val byte_size = total_elements * 8; // 8 bytes per f64
+    val raw_ptr: *mut u8 = alloc(byte_size, 32); // 32-byte alignment
+    mem_set(raw_ptr, 0, byte_size);
+
+    return Tensor2D {
+        data: raw_ptr as *mut f64,
+        rows: rows,
+        cols: cols,
+        capacity: total_elements,
+    };
+}
+
+pub fn tensor_destroy(t: mut ref Tensor2D) -> void {
+    if t.capacity > 0 {
+        val byte_size = t.capacity * 8;
+        mem_free(t.data as *mut u8, byte_size);
+        t.rows = 0;
+        t.cols = 0;
+        t.capacity = 0;
+    }
+}
+
+pub fn tensor_get(t: ref Tensor2D, r: usize, c: usize) -> f64 {
+    if r >= t.rows || c >= t.cols {
+        return 0.0;
+    }
+    val idx = r * t.cols + c;
+    return t.data[idx];
+}
+
+pub fn tensor_set(t: mut ref Tensor2D, r: usize, c: usize, value: f64) -> bool {
+    if r >= t.rows || c >= t.cols {
+        return false;
+    }
+    val idx = r * t.cols + c;
+    t.data[idx] = value;
+    return true;
+}
+
+pub fn tensor_fill(t: mut ref Tensor2D, val_num: f64) -> void {
+    val total = t.rows * t.cols;
+    var i: usize = 0;
+    while i < total {
+        t.data[i] = val_num;
+        i = i + 1;
+    }
+}
+
+pub fn tensor_add(a: ref Tensor2D, b: ref Tensor2D, out_t: mut ref Tensor2D) -> bool {
+    if a.rows != b.rows || a.cols != b.cols || out_t.rows != a.rows || out_t.cols != a.cols {
+        return false;
+    }
+    val total = a.rows * a.cols;
+    var i: usize = 0;
+    while i < total {
+        out_t.data[i] = a.data[i] + b.data[i];
+        i = i + 1;
+    }
+    return true;
+}
+
+pub fn tensor_scale(t: mut ref Tensor2D, factor: f64) -> void {
+    val total = t.rows * t.cols;
+    var i: usize = 0;
+    while i < total {
+        t.data[i] = t.data[i] * factor;
+        i = i + 1;
+    }
+}
+
+pub fn tensor_dot_product(a: *const f64, b: *const f64, len: usize) -> f64 {
+    var sum: f64 = 0.0;
+    var i: usize = 0;
+    while i < len {
+        sum = sum + (a[i] * b[i]);
+        i = i + 1;
+    }
+    return sum;
+}
+
+// Matrix multiplication: C = A * B
+// A is (M x K), B is (K x N), C is (M x N)
+pub fn tensor_matmul(a: ref Tensor2D, b: ref Tensor2D, c: mut ref Tensor2D) -> bool {
+    if a.cols != b.rows || c.rows != a.rows || c.cols != b.cols {
+        return false;
+    }
+
+    val m = a.rows;
+    val k_dim = a.cols;
+    val n = b.cols;
+
+    var i: usize = 0;
+    while i < m {
+        var j: usize = 0;
+        while j < n {
+            var sum: f64 = 0.0;
+            var k: usize = 0;
+            while k < k_dim {
+                val a_val = a.data[i * k_dim + k];
+                val b_val = b.data[k * n + j];
+                sum = sum + (a_val * b_val);
+                k = k + 1;
+            }
+            c.data[i * n + j] = sum;
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+// ReLU Activation Function for Neural Networks: f(x) = max(0, x)
+pub fn tensor_relu(t: mut ref Tensor2D) -> void {
+    val total = t.rows * t.cols;
+    var i: usize = 0;
+    while i < total {
+        if t.data[i] < 0.0 {
+            t.data[i] = 0.0;
+        }
+        i = i + 1;
+    }
+}

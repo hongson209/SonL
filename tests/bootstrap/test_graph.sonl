@@ -1,0 +1,40 @@
+// Test suite for SonLang Compute Graph
+// Verifies DAG construction, node sequencing, and linear static allocation
+
+import "library/std/ai/graph.sonl";
+
+fn main() -> i32 {
+    var g = graph_new(16);
+
+    // Build simple Feedforward AI Subgraph:
+    // Node 0: Input Tensor X
+    // Node 1: Weight Tensor W1
+    // Node 2: MatMul(0, 1) -> Hidden Layer
+    // Node 3: ReLU(2) -> Activation
+    val n0 = graph_add_node(mut ref g, 1, -1, -1);
+    val n1 = graph_add_node(mut ref g, 1, -1, -1);
+    val n2 = graph_add_node(mut ref g, 2, n0, n1);
+    val n3 = graph_add_node(mut ref g, 4, n2, -1);
+
+    if n0 != 0 || n1 != 1 || n2 != 2 || n3 != 3 {
+        return 1;
+    }
+
+    if graph_len(ref g) != 4 {
+        return 2;
+    }
+
+    // Verify operator kinds
+    if graph_get_op(ref g, 0) != 1 {
+        return 3;
+    }
+    if graph_get_op(ref g, 2) != 2 {
+        return 4;
+    }
+    if graph_get_op(ref g, 3) != 4 {
+        return 5;
+    }
+
+    graph_destroy(mut ref g);
+    return 0;
+}

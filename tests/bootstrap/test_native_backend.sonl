@@ -1,0 +1,54 @@
+// Test suite for Native x64 Emitter and ELF/PE Linkers
+// Verifies independent machine code generation without external C toolchains
+
+import "compiler/backend/x64_emit.sonl";
+import "compiler/linker/pe.sonl";
+import "compiler/linker/elf.sonl";
+import "compiler/backend/native_emit.sonl";
+
+fn main() -> i32 {
+    // 1. Test x64 opcode generation
+    var code_buf: [u8; 64] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var emitter = x64_emitter_new(code_buf);
+
+    x64_emit_prologue(mut ref emitter);
+    x64_emit_xor_eax_eax(mut ref emitter);
+    x64_emit_epilogue(mut ref emitter);
+
+    // Verify Prologue: push rbp (0x55), mov rbp, rsp (0x48, 0x89, 0xE5)
+    if emitter.buffer[0] != (0x55 as u8) || emitter.buffer[1] != (0x48 as u8) {
+        return 1;
+    }
+
+    // Verify xor eax, eax (0x31, 0xC0)
+    if emitter.buffer[4] != (0x31 as u8) || emitter.buffer[5] != (0xC0 as u8) {
+        return 2;
+    }
+
+    // Verify Epilogue: pop rbp (0x5D), ret (0xC3)
+    if emitter.buffer[6] != (0x5D as u8) || emitter.buffer[7] != (0xC3 as u8) {
+        return 3;
+    }
+
+    // 2. Test PE Writer
+    var pe_buf: [u8; 512] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var pe_w = pe_writer_new(pe_buf);
+    pe_write_dos_header(mut ref pe_w);
+
+    // Verify DOS Magic: 'M' (0x4D), 'Z' (0x5A)
+    if pe_w.buffer[0] != (0x4D as u8) || pe_w.buffer[1] != (0x5A as u8) {
+        return 4;
+    }
+
+    // 3. Test ELF Writer
+    var elf_buf: [u8; 128] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var elf_w = elf_writer_new(elf_buf);
+    elf_write_header_x64(mut ref elf_w, 0x400000);
+
+    // Verify ELF Magic: 0x7F, 'E' (0x45), 'L' (0x4C), 'F' (0x46)
+    if elf_w.buffer[0] != (0x7F as u8) || elf_w.buffer[1] != (0x45 as u8) || elf_w.buffer[2] != (0x4C as u8) || elf_w.buffer[3] != (0x46 as u8) {
+        return 5;
+    }
+
+    return 0;
+}

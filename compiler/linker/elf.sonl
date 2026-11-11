@@ -1,0 +1,106 @@
+// SonLang ELF-64 Object & Executable Generator (Linux/FreeBSD)
+// Generates standard 64-bit ELF headers and sections for non-Windows platforms
+
+pub struct ElfWriter {
+    buffer: [u8],
+    offset: usize,
+}
+
+pub fn elf_writer_new(storage: [u8]) -> ElfWriter => ElfWriter {
+    buffer: storage,
+    offset: 0,
+};
+
+pub fn elf_write_byte(w: mut ref ElfWriter, b: u8) -> bool {
+    if w.offset >= w.buffer.len {
+        return false;
+    }
+    w.buffer[w.offset] = b;
+    w.offset = w.offset + 1;
+    return true;
+}
+
+pub fn elf_write_u16(w: mut ref ElfWriter, val_num: u16) -> bool {
+    val b0 = (val_num & 0xFF) as u8;
+    val b1 = ((val_num >> 8) & 0xFF) as u8;
+    val ok0 = elf_write_byte(w, b0);
+    val ok1 = elf_write_byte(w, b1);
+    return ok0 && ok1;
+}
+
+pub fn elf_write_u32(w: mut ref ElfWriter, val_num: u32) -> bool {
+    val b0 = (val_num & 0xFF) as u8;
+    val b1 = ((val_num >> 8) & 0xFF) as u8;
+    val b2 = ((val_num >> 16) & 0xFF) as u8;
+    val b3 = ((val_num >> 24) & 0xFF) as u8;
+    val ok0 = elf_write_byte(w, b0);
+    val ok1 = elf_write_byte(w, b1);
+    val ok2 = elf_write_byte(w, b2);
+    val ok3 = elf_write_byte(w, b3);
+    return ok0 && ok1 && ok2 && ok3;
+}
+
+pub fn elf_write_u64(w: mut ref ElfWriter, val_num: u64) -> bool {
+    val lo = (val_num & 0xFFFFFFFF) as u32;
+    val hi = ((val_num >> 32) & 0xFFFFFFFF) as u32;
+    val ok_lo = elf_write_u32(w, lo);
+    val ok_hi = elf_write_u32(w, hi);
+    return ok_lo && ok_hi;
+}
+
+// Write Standard ELF64 Header (64 bytes)
+// Magic: 0x7F 'E' 'L' 'F', Class: 2 (64-bit), Data: 1 (LSB), Version: 1
+pub fn elf_write_header_x64(w: mut ref ElfWriter, entry_point: u64) -> bool {
+    // e_ident[EI_MAG0..EI_MAG3] = 0x7F, 'E', 'L', 'F'
+    elf_write_byte(w, 0x7F as u8);
+    elf_write_byte(w, 0x45 as u8);
+    elf_write_byte(w, 0x4C as u8);
+    elf_write_byte(w, 0x46 as u8);
+
+    // EI_CLASS = 2 (ELFCLASS64)
+    elf_write_byte(w, 2 as u8);
+    // EI_DATA = 1 (ELFDATA2LSB - Little Endian)
+    elf_write_byte(w, 1 as u8);
+    // EI_VERSION = 1 (EV_CURRENT)
+    elf_write_byte(w, 1 as u8);
+    // EI_OSABI = 0 (ELFOSABI_NONE / Linux System V)
+    elf_write_byte(w, 0 as u8);
+    // EI_ABIVERSION = 0
+    elf_write_byte(w, 0 as u8);
+
+    // Padding (7 bytes)
+    var i: usize = 0;
+    while i < 7 {
+        elf_write_byte(w, 0 as u8);
+        i = i + 1;
+    }
+
+    // e_type = 2 (ET_EXEC: Executable file)
+    elf_write_u16(w, 2);
+    // e_machine = 0x3E (EM_X86_64: AMD x86-64)
+    elf_write_u16(w, 0x3E);
+    // e_version = 1
+    elf_write_u32(w, 1);
+    // e_entry = Entry point address
+    elf_write_u64(w, entry_point);
+    // e_phoff = Program header table offset (usually 64 bytes)
+    elf_write_u64(w, 64);
+    // e_shoff = Section header table offset
+    elf_write_u64(w, 0);
+    // e_flags = 0
+    elf_write_u32(w, 0);
+    // e_ehsize = Size of this header (64 bytes)
+    elf_write_u16(w, 64);
+    // e_phentsize = Size of program header entry (56 bytes)
+    elf_write_u16(w, 56);
+    // e_phnum = Number of program headers
+    elf_write_u16(w, 1);
+    // e_shentsize = 64
+    elf_write_u16(w, 64);
+    // e_shnum = 0
+    elf_write_u16(w, 0);
+    // e_shstrndx = 0
+    elf_write_u16(w, 0);
+
+    return true;
+}

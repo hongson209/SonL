@@ -1,0 +1,52 @@
+// SonLang Native Self-Host Backend Machine Code Emitter
+// Converts AST representation into x86-64 machine instructions and ELF/PE binaries
+// Direct binary execution without relying on Clang/C linkers
+
+import "compiler/ast/ast.sonl";
+import "compiler/backend/x64_emit.sonl";
+import "compiler/linker/pe.sonl";
+import "compiler/linker/elf.sonl";
+
+pub struct NativeBackend {
+    target_os: i32,     // 1: Windows (PE), 2: Linux (ELF)
+    code_emitter: X64Emitter,
+}
+
+pub fn native_backend_new(target_os: i32, code_buffer: [u8]) -> NativeBackend => NativeBackend {
+    target_os: target_os,
+    code_emitter: x64_emitter_new(code_buffer),
+};
+
+// Emits machine code for a function returning an integer constant (e.g. fn main() -> i32 => 0;)
+pub fn native_emit_return_const(b: mut ref NativeBackend, return_val: i32) -> bool {
+    val ok_prologue = x64_emit_prologue(mut ref b.code_emitter);
+    if !ok_prologue { return false; }
+
+    if return_val == 0 {
+        val ok_xor = x64_emit_xor_eax_eax(mut ref b.code_emitter);
+        if !ok_xor { return false; }
+    } else {
+        val ok_mov = x64_emit_mov_eax_imm(mut ref b.code_emitter, return_val as u32);
+        if !ok_mov { return false; }
+    }
+
+    val ok_epilogue = x64_emit_epilogue(mut ref b.code_emitter);
+    return ok_epilogue;
+}
+
+// Emits an executable Windows PE file from machine code
+pub fn native_generate_pe(b: mut ref NativeBackend, pe_buffer: [u8]) -> usize {
+    var writer = pe_writer_new(pe_buffer);
+    pe_write_dos_header(mut ref writer);
+    pe_write_signature(mut ref writer);
+    pe_write_coff_header(mut ref writer, 1);
+    pe_write_optional_header_x64(mut ref writer, 0x1000, b.code_emitter.offset as u32);
+    return writer.offset;
+}
+
+// Emits an executable Linux ELF64 file from machine code
+pub fn native_generate_elf(b: mut ref NativeBackend, elf_buffer: [u8]) -> usize {
+    var writer = elf_writer_new(elf_buffer);
+    elf_write_header_x64(mut ref writer, 0x400000);
+    return writer.offset;
+}

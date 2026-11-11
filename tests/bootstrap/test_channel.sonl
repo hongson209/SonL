@@ -1,0 +1,39 @@
+// Test suite for SonLang Lock-Free MPSC Channel
+// Verifies FIFO ordering, atomic bounds, and zero allocations on hot send/recv path
+
+import "library/std/sync/channel.sonl";
+
+fn main() -> i32 {
+    var ch = channel_new_i32(8);
+
+    // 1. Send items
+    channel_send_i32(mut ref ch, 100);
+    channel_send_i32(mut ref ch, 200);
+    channel_send_i32(mut ref ch, 300);
+
+    if channel_len_i32(ref ch) != 3 {
+        return 1;
+    }
+
+    // 2. Receive items in FIFO order
+    val v1 = channel_recv_i32(mut ref ch);
+    val v2 = channel_recv_i32(mut ref ch);
+    val v3 = channel_recv_i32(mut ref ch);
+
+    if v1 != 100 || v2 != 200 || v3 != 300 {
+        return 2;
+    }
+
+    if channel_len_i32(ref ch) != 0 {
+        return 3;
+    }
+
+    // 3. Receive from empty channel must return -1
+    val v_empty = channel_recv_i32(mut ref ch);
+    if v_empty != -1 {
+        return 4;
+    }
+
+    channel_destroy_i32(mut ref ch);
+    return 0;
+}

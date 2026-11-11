@@ -1,0 +1,77 @@
+// SonLang MPSC (Multi-Producer Single-Consumer) Lock-Free Channel
+// High-throughput, low-latency inter-task communication for AI pipelines and Actor models
+// Zero OS mutex overhead, atomic ring buffer
+
+import "library/std/sync/atomic.sonl";
+import "library/std/mem/heap.sonl";
+
+pub struct ChannelI32 {
+    buffer: *mut i32,
+    capacity: usize,
+    head: AtomicI32,
+    tail: AtomicI32,
+}
+
+pub fn channel_new_i32(capacity: usize) -> ChannelI32 {
+    var cap = capacity;
+    if cap == 0 {
+        cap = 16;
+    }
+    val raw_ptr: *mut u8 = alloc(cap * 4, 4);
+    mem_set(raw_ptr, 0, cap * 4);
+
+    return ChannelI32 {
+        buffer: raw_ptr as *mut i32,
+        capacity: cap,
+        head: atomic_new_i32(0),
+        tail: atomic_new_i32(0),
+    };
+}
+
+pub fn channel_destroy_i32(ch: mut ref ChannelI32) -> void {
+    if ch.capacity > 0 {
+        val byte_size = ch.capacity * 4;
+        mem_free(ch.buffer as *mut u8, byte_size);
+        ch.capacity = 0;
+    }
+}
+
+pub fn channel_send_i32(ch: mut ref ChannelI32, item: i32) -> bool {
+    val current_tail = atomic_load_i32(ref ch.tail);
+    val current_head = atomic_load_i32(ref ch.head);
+
+    val count = current_tail - current_head;
+    if count >= (ch.capacity as i32) {
+        return false; // Channel full
+    }
+
+    val idx = (current_tail as usize) % ch.capacity;
+    ch.buffer[idx] = item;
+
+    atomic_fetch_add_i32(mut ref ch.tail, 1);
+    return true;
+}
+
+pub fn channel_recv_i32(ch: mut ref ChannelI32) -> i32 {
+    val current_head = atomic_load_i32(ref ch.head);
+    val current_tail = atomic_load_i32(ref ch.tail);
+
+    if current_head >= current_tail {
+        return -1; // Channel empty sentinel
+    }
+
+    val idx = (current_head as usize) % ch.capacity;
+    val item = ch.buffer[idx];
+
+    atomic_fetch_add_i32(mut ref ch.head, 1);
+    return item;
+}
+
+pub fn channel_len_i32(ch: ref ChannelI32) -> usize {
+    val current_head = atomic_load_i32(ref ch.head);
+    val current_tail = atomic_load_i32(ref ch.tail);
+    if current_tail <= current_head {
+        return 0;
+    }
+    return (current_tail - current_head) as usize;
+}

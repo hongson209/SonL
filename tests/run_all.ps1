@@ -69,7 +69,11 @@ $tests = @(
     "tests/bootstrap/test_net_socket.sonl",
     "examples/m1_echo_server.sonl",
     "library/std/protocol/minecraft.sonl",
-    "examples/m2_minecraft_ping.sonl"
+    "examples/m2_minecraft_ping.sonl",
+    "tests/bootstrap/test_native_backend.sonl",
+    "tests/bootstrap/test_ai_tensor.sonl",
+    "tests/bootstrap/test_channel.sonl",
+    "tests/bootstrap/test_graph.sonl"
 )
 
 if (-not (Test-Path "build")) {

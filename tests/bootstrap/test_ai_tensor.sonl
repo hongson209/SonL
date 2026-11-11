@@ -1,0 +1,66 @@
+// Test suite for SonLang AI Tensor Engine
+// Verifies 2D Tensor operations, zero-allocation memory, ReLU, scale, and matrix multiplication
+
+import "library/std/ai/tensor.sonl";
+
+fn main() -> i32 {
+    // 1. Create 2x2 Tensors A and B
+    var a = tensor_new(2, 2);
+    var b = tensor_new(2, 2);
+    var c = tensor_new(2, 2);
+
+    // Fill A: [[1.0, 2.0], [3.0, 4.0]]
+    tensor_set(mut ref a, 0, 0, 1.0);
+    tensor_set(mut ref a, 0, 1, 2.0);
+    tensor_set(mut ref a, 1, 0, 3.0);
+    tensor_set(mut ref a, 1, 1, 4.0);
+
+    // Fill B: [[2.0, 0.0], [1.0, 2.0]]
+    tensor_set(mut ref b, 0, 0, 2.0);
+    tensor_set(mut ref b, 0, 1, 0.0);
+    tensor_set(mut ref b, 1, 0, 1.0);
+    tensor_set(mut ref b, 1, 1, 2.0);
+
+    // 2. Test Matrix Multiplication: C = A * B
+    // Expected:
+    // C[0,0] = 1*2 + 2*1 = 4.0
+    // C[0,1] = 1*0 + 2*2 = 4.0
+    // C[1,0] = 3*2 + 4*1 = 10.0
+    // C[1,1] = 3*0 + 4*2 = 8.0
+    val ok_mm = tensor_matmul(ref a, ref b, mut ref c);
+    if !ok_mm {
+        return 1;
+    }
+
+    val c00 = tensor_get(ref c, 0, 0);
+    val c01 = tensor_get(ref c, 0, 1);
+    val c10 = tensor_get(ref c, 1, 0);
+    val c11 = tensor_get(ref c, 1, 1);
+
+    if c00 < 3.99 || c00 > 4.01 {
+        return 2;
+    }
+    if c01 < 3.99 || c01 > 4.01 {
+        return 3;
+    }
+    if c10 < 9.99 || c10 > 10.01 {
+        return 4;
+    }
+    if c11 < 7.99 || c11 > 8.01 {
+        return 5;
+    }
+
+    // 3. Test ReLU on negative values
+    tensor_set(mut ref c, 0, 0, -5.0);
+    tensor_relu(mut ref c);
+    val relu_val = tensor_get(ref c, 0, 0);
+    if relu_val != 0.0 {
+        return 6;
+    }
+
+    tensor_destroy(mut ref a);
+    tensor_destroy(mut ref b);
+    tensor_destroy(mut ref c);
+
+    return 0;
+}

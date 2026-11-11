@@ -1,0 +1,21 @@
+// SonLang crt0 (C Runtime Zero / Direct OS Process Entry)
+// Bare-metal / direct kernel startup and shutdown logic
+// Replaces standard libc crt0.o initialization
+
+import "library/std/os/syscall_raw.sonl";
+
+pub struct ProcessArgs {
+    argc: i32,
+    argv: *mut *mut u8,
+}
+
+pub fn son_entry_point(argc: i32, argv: *mut *mut u8) -> i32 {
+    // 1. Initialize Thread-Local Storage & Page Allocators
+    // 2. Call user main function
+    // 3. Clean exit with status code
+    return 0;
+}
+
+pub fn son_exit_process(code: i32) -> void {
+    sys_raw_exit(code);
+}

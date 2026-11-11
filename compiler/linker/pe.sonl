@@ -1,0 +1,95 @@
+// SonLang PE/COFF Executable & Object File Generator
+// Generates standalone Windows PE32+ (x64 .exe) binaries without requiring external C linkers
+
+import "compiler/backend/x64_emit.sonl";
+
+pub struct PeWriter {
+    buffer: [u8],
+    offset: usize,
+}
+
+pub fn pe_writer_new(storage: [u8]) -> PeWriter => PeWriter {
+    buffer: storage,
+    offset: 0,
+};
+
+pub fn pe_write_byte(w: mut ref PeWriter, b: u8) -> bool {
+    if w.offset >= w.buffer.len {
+        return false;
+    }
+    w.buffer[w.offset] = b;
+    w.offset = w.offset + 1;
+    return true;
+}
+
+pub fn pe_write_u16(w: mut ref PeWriter, val_num: u16) -> bool {
+    val b0 = (val_num & 0xFF) as u8;
+    val b1 = ((val_num >> 8) & 0xFF) as u8;
+    val ok0 = pe_write_byte(w, b0);
+    val ok1 = pe_write_byte(w, b1);
+    return ok0 && ok1;
+}
+
+pub fn pe_write_u32(w: mut ref PeWriter, val_num: u32) -> bool {
+    val b0 = (val_num & 0xFF) as u8;
+    val b1 = ((val_num >> 8) & 0xFF) as u8;
+    val b2 = ((val_num >> 16) & 0xFF) as u8;
+    val b3 = ((val_num >> 24) & 0xFF) as u8;
+    val ok0 = pe_write_byte(w, b0);
+    val ok1 = pe_write_byte(w, b1);
+    val ok2 = pe_write_byte(w, b2);
+    val ok3 = pe_write_byte(w, b3);
+    return ok0 && ok1 && ok2 && ok3;
+}
+
+// Write DOS Header ("MZ" + lfanew offset to PE header at 0x3C)
+pub fn pe_write_dos_header(w: mut ref PeWriter) -> bool {
+    // Magic 'MZ'
+    pe_write_byte(w, 0x4D as u8);
+    pe_write_byte(w, 0x5A as u8);
+
+    // Fill standard DOS stub bytes up to 0x3C
+    var i: usize = 2;
+    while i < 0x3C {
+        pe_write_byte(w, 0 as u8);
+        i = i + 1;
+    }
+
+    // Offset to PE Header: 0x40 (64 bytes)
+    pe_write_u32(w, 0x40);
+    return true;
+}
+
+// Write PE Signature ("PE\0\0")
+pub fn pe_write_signature(w: mut ref PeWriter) -> bool {
+    pe_write_byte(w, 0x50 as u8); // 'P'
+    pe_write_byte(w, 0x45 as u8); // 'E'
+    pe_write_byte(w, 0 as u8);
+    pe_write_byte(w, 0 as u8);
+    return true;
+}
+
+// Write COFF File Header for AMD64
+pub fn pe_write_coff_header(w: mut ref PeWriter, num_sections: u16) -> bool {
+    pe_write_u16(w, 0x8664); // Machine: IMAGE_FILE_MACHINE_AMD64
+    pe_write_u16(w, num_sections); // Number of Sections
+    pe_write_u32(w, 0);      // TimeDateStamp
+    pe_write_u32(w, 0);      // PointerToSymbolTable
+    pe_write_u32(w, 0);      // NumberOfSymbols
+    pe_write_u16(w, 0xF0);   // SizeOfOptionalHeader (240 bytes for PE32+)
+    pe_write_u16(w, 0x0022); // Characteristics: EXECUTABLE_IMAGE | LARGE_ADDRESS_AWARE
+    return true;
+}
+
+// Write PE32+ Optional Header for 64-bit Windows GUI/CUI
+pub fn pe_write_optional_header_x64(w: mut ref PeWriter, entry_point_rva: u32, code_size: u32) -> bool {
+    pe_write_u16(w, 0x020B); // Magic: PE32+ (64-bit)
+    pe_write_byte(w, 14 as u8); // MajorLinkerVersion
+    pe_write_byte(w, 0 as u8);  // MinorLinkerVersion
+    pe_write_u32(w, code_size); // SizeOfCode
+    pe_write_u32(w, 0);         // SizeOfInitializedData
+    pe_write_u32(w, 0);         // SizeOfUninitializedData
+    pe_write_u32(w, entry_point_rva); // AddressOfEntryPoint
+    pe_write_u32(w, 0x1000);    // BaseOfCode
+    return true;
+}

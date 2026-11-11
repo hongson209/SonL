@@ -1,0 +1,124 @@
+// SonLang x86-64 Machine Code Emitter
+// Directly outputs machine code opcodes into byte buffers
+// Independent of C/Clang, forming the backbone of the Native Self-Host Backend
+
+pub struct X64Emitter {
+    buffer: [u8],
+    offset: usize,
+}
+
+pub fn x64_emitter_new(storage: [u8]) -> X64Emitter => X64Emitter {
+    buffer: storage,
+    offset: 0,
+};
+
+pub fn x64_emit_byte(e: mut ref X64Emitter, b: u8) -> bool {
+    if e.offset >= e.buffer.len {
+        return false;
+    }
+    e.buffer[e.offset] = b;
+    e.offset = e.offset + 1;
+    return true;
+}
+
+pub fn x64_emit_u32(e: mut ref X64Emitter, val_num: u32) -> bool {
+    val b0 = (val_num & 0xFF) as u8;
+    val b1 = ((val_num >> 8) & 0xFF) as u8;
+    val b2 = ((val_num >> 16) & 0xFF) as u8;
+    val b3 = ((val_num >> 24) & 0xFF) as u8;
+
+    val ok0 = x64_emit_byte(e, b0);
+    val ok1 = x64_emit_byte(e, b1);
+    val ok2 = x64_emit_byte(e, b2);
+    val ok3 = x64_emit_byte(e, b3);
+
+    return ok0 && ok1 && ok2 && ok3;
+}
+
+pub fn x64_emit_u64(e: mut ref X64Emitter, val_num: u64) -> bool {
+    val lo = (val_num & 0xFFFFFFFF) as u32;
+    val hi = ((val_num >> 32) & 0xFFFFFFFF) as u32;
+    val ok_lo = x64_emit_u32(e, lo);
+    val ok_hi = x64_emit_u32(e, hi);
+    return ok_lo && ok_hi;
+}
+
+// Instruction: nop (0x90)
+pub fn x64_emit_nop(e: mut ref X64Emitter) -> bool => x64_emit_byte(e, 0x90 as u8);
+
+// Instruction: ret (0xC3)
+pub fn x64_emit_ret(e: mut ref X64Emitter) -> bool => x64_emit_byte(e, 0xC3 as u8);
+
+// Instruction: push rbp (0x55)
+pub fn x64_emit_push_rbp(e: mut ref X64Emitter) -> bool => x64_emit_byte(e, 0x55 as u8);
+
+// Instruction: pop rbp (0x5D)
+pub fn x64_emit_pop_rbp(e: mut ref X64Emitter) -> bool => x64_emit_byte(e, 0x5D as u8);
+
+// Instruction: mov rbp, rsp (REX.W 48 89 E5)
+pub fn x64_emit_mov_rbp_rsp(e: mut ref X64Emitter) -> bool {
+    val ok1 = x64_emit_byte(e, 0x48 as u8);
+    val ok2 = x64_emit_byte(e, 0x89 as u8);
+    val ok3 = x64_emit_byte(e, 0xE5 as u8);
+    return ok1 && ok2 && ok3;
+}
+
+// Instruction: mov eax, imm32 (B8 <imm32>)
+pub fn x64_emit_mov_eax_imm(e: mut ref X64Emitter, imm: u32) -> bool {
+    val ok1 = x64_emit_byte(e, 0xB8 as u8);
+    val ok2 = x64_emit_u32(e, imm);
+    return ok1 && ok2;
+}
+
+// Instruction: xor eax, eax (31 C0)
+pub fn x64_emit_xor_eax_eax(e: mut ref X64Emitter) -> bool {
+    val ok1 = x64_emit_byte(e, 0x31 as u8);
+    val ok2 = x64_emit_byte(e, 0xC0 as u8);
+    return ok1 && ok2;
+}
+
+// Instruction: syscall (0F 05) - Linux x64 system call
+pub fn x64_emit_syscall(e: mut ref X64Emitter) -> bool {
+    val ok1 = x64_emit_byte(e, 0x0F as u8);
+    val ok2 = x64_emit_byte(e, 0x05 as u8);
+    return ok1 && ok2;
+}
+
+// Instruction: add eax, edx (01 D0)
+pub fn x64_emit_add_eax_edx(e: mut ref X64Emitter) -> bool {
+    val ok1 = x64_emit_byte(e, 0x01 as u8);
+    val ok2 = x64_emit_byte(e, 0xD0 as u8);
+    return ok1 && ok2;
+}
+
+// Instruction: sub rsp, imm8 (48 83 EC <imm8>)
+pub fn x64_emit_sub_rsp_imm8(e: mut ref X64Emitter, imm: u8) -> bool {
+    val ok1 = x64_emit_byte(e, 0x48 as u8);
+    val ok2 = x64_emit_byte(e, 0x83 as u8);
+    val ok3 = x64_emit_byte(e, 0xEC as u8);
+    val ok4 = x64_emit_byte(e, imm);
+    return ok1 && ok2 && ok3 && ok4;
+}
+
+// Instruction: add rsp, imm8 (48 83 C4 <imm8>)
+pub fn x64_emit_add_rsp_imm8(e: mut ref X64Emitter, imm: u8) -> bool {
+    val ok1 = x64_emit_byte(e, 0x48 as u8);
+    val ok2 = x64_emit_byte(e, 0x83 as u8);
+    val ok3 = x64_emit_byte(e, 0xC4 as u8);
+    val ok4 = x64_emit_byte(e, imm);
+    return ok1 && ok2 && ok3 && ok4;
+}
+
+// Standard Function Prologue: push rbp; mov rbp, rsp
+pub fn x64_emit_prologue(e: mut ref X64Emitter) -> bool {
+    val ok1 = x64_emit_push_rbp(e);
+    val ok2 = x64_emit_mov_rbp_rsp(e);
+    return ok1 && ok2;
+}
+
+// Standard Function Epilogue: pop rbp; ret
+pub fn x64_emit_epilogue(e: mut ref X64Emitter) -> bool {
+    val ok1 = x64_emit_pop_rbp(e);
+    val ok2 = x64_emit_ret(e);
+    return ok1 && ok2;
+}

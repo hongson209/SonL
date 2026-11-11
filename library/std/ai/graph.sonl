@@ -1,0 +1,69 @@
+// SonLang Computation Graph (Graph-Based Static Memory & Pipeline Planning)
+// Enables AI agents to construct declarative execution DAGs
+// Statically pre-allocates node buffers, eliminates runtime graph allocation
+
+import "library/std/mem/heap.sonl";
+
+pub struct GraphNode {
+    op_kind: i32,       // 1: Input, 2: MatMul, 3: Add, 4: ReLU, 5: Output
+    input_a: i32,
+    input_b: i32,
+    output_idx: i32,
+}
+
+pub struct ComputeGraph {
+    nodes: *mut GraphNode,
+    node_count: usize,
+    capacity: usize,
+}
+
+pub fn graph_new(capacity: usize) -> ComputeGraph {
+    var cap = capacity;
+    if cap == 0 {
+        cap = 32;
+    }
+    val byte_size = cap * 16; // 16 bytes per GraphNode (4 x i32)
+    val raw_ptr: *mut u8 = alloc(byte_size, 8);
+    mem_set(raw_ptr, 0, byte_size);
+
+    return ComputeGraph {
+        nodes: raw_ptr as *mut GraphNode,
+        node_count: 0,
+        capacity: cap,
+    };
+}
+
+pub fn graph_destroy(g: mut ref ComputeGraph) -> void {
+    if g.capacity > 0 {
+        val byte_size = g.capacity * 16;
+        mem_free(g.nodes as *mut u8, byte_size);
+        g.node_count = 0;
+        g.capacity = 0;
+    }
+}
+
+pub fn graph_add_node(g: mut ref ComputeGraph, op_kind: i32, in_a: i32, in_b: i32) -> i32 {
+    if g.node_count >= g.capacity {
+        return -1;
+    }
+    val idx = g.node_count as i32;
+    // Store fields sequentially
+    val base_ptr = (g.nodes as *mut i32);
+    base_ptr[(g.node_count * 4) + 0] = op_kind;
+    base_ptr[(g.node_count * 4) + 1] = in_a;
+    base_ptr[(g.node_count * 4) + 2] = in_b;
+    base_ptr[(g.node_count * 4) + 3] = idx;
+
+    g.node_count = g.node_count + 1;
+    return idx;
+}
+
+pub fn graph_get_op(g: ref ComputeGraph, node_idx: usize) -> i32 {
+    if node_idx >= g.node_count {
+        return 0;
+    }
+    val base_ptr = (g.nodes as *const i32);
+    return base_ptr[(node_idx * 4) + 0];
+}
+
+pub fn graph_len(g: ref ComputeGraph) -> usize => g.node_count;
