@@ -1,0 +1,32 @@
+// Test suite for Random Access File I/O
+import "library/std/os/fs.sonl";
+
+fn main() -> i32 {
+    val path = "build/test_seek_io.bin";
+    var f = file_open(path, "wb+");
+    if !f.is_open {
+        return 1;
+    }
+
+    // Write header bytes
+    file_write_exact(ref f, "HEADER1234", 10);
+
+    // Seek to byte offset 100
+    val seek_ok = file_seek(ref f, 100, 0); // SEEK_SET = 0
+    if !seek_ok {
+        file_close_handle(mut ref f);
+        return 2;
+    }
+
+    val pos = file_tell(ref f);
+    if pos != 100 {
+        file_close_handle(mut ref f);
+        return 3;
+    }
+
+    // Write payload at offset 100
+    file_write_exact(ref f, "DATA_SECTOR", 11);
+
+    file_close_handle(mut ref f);
+    return 0;
+}

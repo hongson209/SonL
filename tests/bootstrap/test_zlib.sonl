@@ -1,0 +1,27 @@
+// Test suite for Zlib / Deflate Compression
+import "library/std/compress/zlib.sonl";
+import "library/std/mem/heap.sonl";
+
+fn main() -> i32 {
+    val original = "SonLangHighPerformanceSonLangHighPerformanceSonLangHighPerformance";
+    val comp_mem: *mut u8 = alloc(128, 4);
+    val comp_len = compress_slice(original, comp_mem, 128);
+
+    if comp_len == 0 {
+        mem_free(comp_mem, 128);
+        return 1;
+    }
+
+    val decomp_mem: *mut u8 = alloc(128, 4);
+    val decomp_len = decompress_slice(original, decomp_mem, 128);
+
+    if decomp_len == 0 {
+        mem_free(comp_mem, 128);
+        mem_free(decomp_mem, 128);
+        return 2;
+    }
+
+    mem_free(comp_mem, 128);
+    mem_free(decomp_mem, 128);
+    return 0;
+}

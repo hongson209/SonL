@@ -1,0 +1,43 @@
+// Test suite for Dynamic ByteBuffer and Endianness
+import "library/std/protocol/bytebuffer.sonl";
+
+fn main() -> i32 {
+    var b = bytebuffer_new(32);
+
+    // 1. Write u8, i16 Big-Endian, i32 Big-Endian, and VarInt
+    bytebuffer_write_u8(mut ref b, 0xFE as u8);
+    bytebuffer_write_i16_be(mut ref b, 1234 as i16);
+    bytebuffer_write_i32_be(mut ref b, 567890);
+    bytebuffer_write_varint(mut ref b, 25565); // Minecraft default port
+
+    if bytebuffer_len(ref b) != 10 { // 1 + 2 + 4 + 3 (VarInt 25565 is 3 bytes)
+        bytebuffer_destroy(mut ref b);
+        return 1;
+    }
+
+    // 2. Read back in exact order
+    val v_u8 = bytebuffer_read_u8(mut ref b);
+    val v_i16 = bytebuffer_read_i16_be(mut ref b);
+    val v_i32 = bytebuffer_read_i32_be(mut ref b);
+    val v_varint = bytebuffer_read_varint(mut ref b);
+
+    if v_u8 != (0xFE as u8) {
+        bytebuffer_destroy(mut ref b);
+        return 2;
+    }
+    if v_i16 != (1234 as i16) {
+        bytebuffer_destroy(mut ref b);
+        return 3;
+    }
+    if v_i32 != 567890 {
+        bytebuffer_destroy(mut ref b);
+        return 4;
+    }
+    if v_varint != 25565 {
+        bytebuffer_destroy(mut ref b);
+        return 5;
+    }
+
+    bytebuffer_destroy(mut ref b);
+    return 0;
+}

@@ -1,0 +1,39 @@
+// SonLang Named Binary Tag (NBT - Minecraft Spec v1.20)
+// High-performance binary compound & tag serializer
+
+import "library/std/protocol/bytebuffer.sonl";
+
+pub fn nbt_tag_end() -> u8 => 0 as u8;
+pub fn nbt_tag_byte() -> u8 => 1 as u8;
+pub fn nbt_tag_short() -> u8 => 2 as u8;
+pub fn nbt_tag_int() -> u8 => 3 as u8;
+pub fn nbt_tag_long() -> u8 => 4 as u8;
+pub fn nbt_tag_float() -> u8 => 5 as u8;
+pub fn nbt_tag_double() -> u8 => 6 as u8;
+pub fn nbt_tag_string() -> u8 => 8 as u8;
+pub fn nbt_tag_list() -> u8 => 9 as u8;
+pub fn nbt_tag_compound() -> u8 => 10 as u8;
+
+pub struct NbtHeader {
+    tag_type: u8,
+    name_len: u16,
+}
+
+pub fn nbt_write_tag_header(buf: mut ref ByteBuffer, tag_type: u8, name: [u8]) -> void {
+    bytebuffer_write_u8(buf, tag_type);
+    bytebuffer_write_i16_be(buf, name.len as i16);
+    var i: usize = 0;
+    while i < name.len {
+        bytebuffer_write_u8(buf, name[i]);
+        i = i + 1;
+    }
+}
+
+pub fn nbt_write_int(buf: mut ref ByteBuffer, name: [u8], value: i32) -> void {
+    nbt_write_tag_header(buf, nbt_tag_int(), name);
+    bytebuffer_write_i32_be(buf, value);
+}
+
+pub fn nbt_write_end(buf: mut ref ByteBuffer) -> void {
+    bytebuffer_write_u8(buf, nbt_tag_end());
+}

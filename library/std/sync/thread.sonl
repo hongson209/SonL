@@ -1,0 +1,25 @@
+// SonLang Native Threading Subsystem
+// Spawns and manages real operating system threads (Windows Win32 / POSIX pthread)
+
+pub struct Thread {
+    handle: i64,
+    is_active: bool,
+}
+
+pub fn thread_spawn(worker_ptr: *const u8, arg_ptr: *mut u8) -> Thread {
+    val h = son_thread_spawn(worker_ptr, arg_ptr);
+    return Thread {
+        handle: h,
+        is_active: h > 0,
+    };
+}
+
+pub fn thread_join(t: mut ref Thread) -> bool {
+    if !t.is_active {
+        return false;
+    }
+    val ok = son_thread_join(t.handle);
+    t.is_active = false;
+    t.handle = 0;
+    return ok;
+}

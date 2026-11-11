@@ -29,3 +29,9 @@ pub fn duration_between(start: Instant, end: Instant) -> Duration {
 pub fn sleep_ms(ms: u32) -> void {
     son_sleep_ms(ms);
 }
+
+pub fn time_nanos() -> i64 => son_time_nanos();
+
+pub fn sleep_us(us: u64) -> void {
+    son_sleep_us(us);
+}

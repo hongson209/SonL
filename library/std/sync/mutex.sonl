@@ -1,0 +1,29 @@
+// SonLang OS Mutex Primitive
+// Fast critical section and mutual exclusion synchronization
+
+pub struct Mutex {
+    handle: i64,
+}
+
+pub fn mutex_new() -> Mutex => Mutex {
+    handle: son_mutex_init(),
+};
+
+pub fn mutex_lock(m: ref Mutex) -> void {
+    if m.handle != 0 {
+        son_mutex_lock(m.handle);
+    }
+}
+
+pub fn mutex_unlock(m: ref Mutex) -> void {
+    if m.handle != 0 {
+        son_mutex_unlock(m.handle);
+    }
+}
+
+pub fn mutex_destroy(m: mut ref Mutex) -> void {
+    if m.handle != 0 {
+        son_mutex_destroy(m.handle);
+        m.handle = 0;
+    }
+}

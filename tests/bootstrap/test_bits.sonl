@@ -1,0 +1,27 @@
+// Test suite for 64-bit Bit Manipulation and Bit Packing
+import "library/std/math/bits.sonl";
+
+fn main() -> i32 {
+    // 1. Test bswap32
+    val v32 = 0x12345678 as u32;
+    val swapped32 = bswap32(v32);
+    if swapped32 != (0x78563412 as u32) {
+        return 1;
+    }
+
+    // 2. Test Bit Packing: pack two 16-bit values into u64 and extract
+    // Val1 = 0xABCD at offset 0
+    // Val2 = 0x1234 at offset 16
+    val packed = (0xABCD as u64) | ((0x1234 as u64) << 16);
+    val ext1 = extract_bits_u64(packed, 0, 16);
+    val ext2 = extract_bits_u64(packed, 16, 16);
+
+    if ext1 != (0xABCD as u64) {
+        return 2;
+    }
+    if ext2 != (0x1234 as u64) {
+        return 3;
+    }
+
+    return 0;
+}

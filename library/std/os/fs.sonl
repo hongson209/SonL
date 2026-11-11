@@ -29,3 +29,49 @@ pub fn fs_file_size(path: [u8]) -> i64 => son_fs_file_size(path);
 pub fn fs_read_file(path: [u8], out_buf: [u8]) -> i64 => son_fs_read_file(path, out_buf);
 
 pub fn os_system(cmd: [u8]) -> i32 => son_os_system(cmd);
+
+// Random-Access File I/O
+pub struct File {
+    handle: i64,
+    is_open: bool,
+}
+
+pub fn file_open(path: [u8], mode: [u8]) -> File {
+    val h = son_file_open(path, mode);
+    return File {
+        handle: h,
+        is_open: h != 0,
+    };
+}
+
+pub fn file_seek(f: ref File, offset: i64, whence: i32) -> bool {
+    if !f.is_open { return false; }
+    return son_file_seek(f.handle, offset, whence);
+}
+
+pub fn file_tell(f: ref File) -> i64 {
+    if !f.is_open { return -1; }
+    return son_file_tell(f.handle);
+}
+
+pub fn file_read_exact(f: ref File, buf: [u8], len: usize) -> usize {
+    if !f.is_open { return 0; }
+    val res = son_file_read_exact(f.handle, buf, len);
+    if res < 0 { return 0; }
+    return res as usize;
+}
+
+pub fn file_write_exact(f: ref File, buf: [u8], len: usize) -> usize {
+    if !f.is_open { return 0; }
+    val res = son_file_write_exact(f.handle, buf, len);
+    if res < 0 { return 0; }
+    return res as usize;
+}
+
+pub fn file_close_handle(f: mut ref File) -> void {
+    if f.is_open {
+        son_file_close_handle(f.handle);
+        f.is_open = false;
+        f.handle = 0;
+    }
+}

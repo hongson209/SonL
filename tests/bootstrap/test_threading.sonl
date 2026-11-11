@@ -1,0 +1,30 @@
+// Test suite for Native Mutex and Precision Sleep
+import "library/std/sync/mutex.sonl";
+import "library/std/time.sonl";
+
+fn main() -> i32 {
+    var m = mutex_new();
+    if m.handle == 0 {
+        return 1;
+    }
+
+    mutex_lock(ref m);
+    // Precision microsecond sleep
+    sleep_us(500);
+    mutex_unlock(ref m);
+
+    mutex_destroy(mut ref m);
+    if m.handle != 0 {
+        return 2;
+    }
+
+    val t0 = time_nanos();
+    sleep_us(100);
+    val t1 = time_nanos();
+
+    if t1 <= t0 {
+        return 3;
+    }
+
+    return 0;
+}

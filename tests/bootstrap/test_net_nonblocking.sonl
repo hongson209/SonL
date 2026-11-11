@@ -1,0 +1,26 @@
+// Test suite for Nonblocking Socket and WSAPoll
+import "library/std/os/net.sonl";
+
+fn main() -> i32 {
+    var server = tcp_listen(29999);
+    if !server.is_connected {
+        return 1;
+    }
+
+    // Set non-blocking mode
+    val nb_ok = tcp_set_nonblocking(ref server, true);
+    if !nb_ok {
+        tcp_close(mut ref server);
+        return 2;
+    }
+
+    // Poll socket with 10ms timeout (should return 0 because no clients connected)
+    val poll_res = tcp_poll(ref server, 1, 10);
+    if poll_res < 0 {
+        tcp_close(mut ref server);
+        return 3;
+    }
+
+    tcp_close(mut ref server);
+    return 0;
+}

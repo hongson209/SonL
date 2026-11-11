@@ -2,7 +2,7 @@
   <img src="icon.png" alt="SonLang Logo" width="180"/>
 </p>
 
-<h1 align="center">SonLang v1.2.0</h1>
+<h1 align="center">SonLang v1.3.0</h1>
 
 <p align="center">
   <strong>An Independent, High-Performance, AI-Native Systems Programming Language</strong>
@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://marketplace.visualstudio.com/items?itemName=SonLang.sonlang"><img src="https://img.shields.io/badge/VS_Code_Extension-SonLang_v0.3.0-red.svg" alt="VS Code Extension"/></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/Performance-Zero--Cost-brightgreen.svg" alt="Performance"/></a>
-  <a href="#memory-safety-model"><img src="https://img.shields.io/badge/Release-v1.2.0_Independent-blue.svg" alt="Release"/></a>
+  <a href="#memory-safety-model"><img src="https://img.shields.io/badge/Release-v1.3.0_Production_Ready-blue.svg" alt="Release"/></a>
   <a href="#native-self-host-backend"><img src="https://img.shields.io/badge/Backend-Native_x86--64_%2B_PE%2FELF-purple.svg" alt="Native Backend"/></a>
   <a href="#ai-native-architecture"><img src="https://img.shields.io/badge/AI--Native-Tensor_%2B_Channel_%2B_DAG-brightgreen.svg" alt="AI Native"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0_%2F_MIT-lightgrey.svg" alt="License"/></a>
@@ -23,21 +23,24 @@
 
 ---
 
-## What's New in v1.2.0
+## What's New in v1.3.0
 
-- 🚀 **100% C-Decoupled Native Machine Code Backend**:
-  - Direct x86-64 machine opcode emitter (`compiler/backend/x64_emit.sonl`).
-  - Native Windows PE32+ executable generator (`compiler/linker/pe.sonl`).
-  - Native Linux ELF64 binary generator (`compiler/linker/elf.sonl`).
-  - Direct OS kernel raw syscalls (`sys_write`, `sys_mmap`, `sys_exit`) and bare-metal entrypoint (`library/std/crt/crt0.sonl`) bypassing libc.
-- ⚡ **Expanded AI & Systems Standard Library**:
-  - **AI Tensor Engine (`library/std/ai/tensor.sonl`)**: 2D tensors, 32-byte AVX2 aligned allocation, $O(N^3)$ matrix multiplication, and ReLU.
-  - **Lock-Free MPSC Channel (`library/std/sync/channel.sonl`)**: Atomic ring-buffer multi-producer single-consumer pipeline.
-  - **DAG ComputeGraph (`library/std/ai/graph.sonl`)**: Declarative static memory execution graph for AI agents.
-  - **Binary Min/Max Heap Priority Queue (`library/std/collections/priority_queue.sonl`)**: $O(\log N)$ push/pop for Dijkstra/A* pathfinding and trading orderbooks.
-  - **Pure Cryptographic SHA-256 (`library/std/crypto/sha256.sonl`)**: FIPS 180-4 compliant cryptographic hasher.
-  - **Real OS TCP Sockets & Minecraft Protocol (`library/std/protocol/`)**: Big-Endian converters, 7-bit zigzag VarInt, and Minecraft handshake/ping.
-- 🧪 **Comprehensive Test Coverage**: 63 automated test suites verified at 100% PASS.
+- 🌐 **Non-Blocking I/O & Event Multiplexing**:
+  - `tcp_set_nonblocking(bool)` via `ioctlsocket(FIONBIO)` / `fcntl(O_NONBLOCK)`.
+  - `tcp_set_nodelay(bool)` disabling Nagle's algorithm for low-latency game/network loops.
+  - `tcp_poll(events, timeout)` via `WSAPoll` (Windows) / `poll` (POSIX) for event-driven server engines.
+- 🧵 **Native OS Threading & Fast Mutex**:
+  - `thread_spawn` and `thread_join` backed by Win32 `CreateThread` / POSIX `pthread_create`.
+  - Native `Mutex` primitive (`CRITICAL_SECTION` / `pthread_mutex_t`).
+  - Microsecond precision tick timers `time_nanos()` and `sleep_us(us)`.
+- 📦 **Binary ByteBuffer, Bitwise Packing & Minecraft NBT**:
+  - Dynamic self-resizing `ByteBuffer` with Big-Endian `read/write_i16/i32/i64_be` and VarInt.
+  - Minecraft NBT v1.20 Tag Serializer (`TAG_Compound`, `TAG_Int`, `TAG_String`, etc.).
+  - 64-bit Bit manipulation intrinsics (`bswap32`, `bswap64`, `extract_bits_u64`).
+  - Zero-dependency byte stream compression & decompression (`library/std/compress/zlib.sonl`).
+- 📁 **Random-Access File I/O (Region/Anvil .mca)**:
+  - 64-bit file positioning: `file_open`, `file_seek` (`SEEK_SET/CUR/END`), `file_tell`, `file_read_exact`, `file_write_exact`.
+- 🧪 **70 Automated Test Workloads**: 100% verified pass across all suites and self-host stages.
 
 ---
 
@@ -184,7 +187,7 @@ SonLang/
 ./son.ps1 emit-ir tests/bootstrap/hello.sonl     # Emit SSA SonIR
 ./son.ps1 emit-llvm tests/bootstrap/hello.sonl   # Emit LLVM IR
 
-# Execute full test suite across 63 workloads
+# Execute full test suite across 70 workloads
 ./son.ps1 test
 
 # Verify bit-for-bit self-hosting convergence

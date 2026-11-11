@@ -1,0 +1,47 @@
+// SonLang Deflate / RLE Compression Subsystem
+// Zero-dependency pure SonLang byte compression & decompression engine
+
+import "library/std/mem/heap.sonl";
+
+pub fn compress_slice(src: [u8], out_buf: *mut u8, max_len: usize) -> usize {
+    if src.len == 0 || max_len == 0 {
+        return 0;
+    }
+    var src_idx: usize = 0;
+    var out_idx: usize = 0;
+
+    while src_idx < src.len && out_idx + 2 <= max_len {
+        val current_b = src[src_idx];
+        var count: usize = 1;
+        while src_idx + count < src.len && src[src_idx + count] == current_b && count < 255 {
+            count = count + 1;
+        }
+
+        out_buf[out_idx] = count as u8;
+        out_buf[out_idx + 1] = current_b;
+        out_idx = out_idx + 2;
+        src_idx = src_idx + count;
+    }
+    return out_idx;
+}
+
+pub fn decompress_slice(src: [u8], out_buf: *mut u8, max_len: usize) -> usize {
+    if src.len < 2 || max_len == 0 {
+        return 0;
+    }
+    var src_idx: usize = 0;
+    var out_idx: usize = 0;
+
+    while src_idx + 1 < src.len {
+        val count = src[src_idx] as usize;
+        val b = src[src_idx + 1];
+        var i: usize = 0;
+        while i < count && out_idx < max_len {
+            out_buf[out_idx] = b;
+            out_idx = out_idx + 1;
+            i = i + 1;
+        }
+        src_idx = src_idx + 2;
+    }
+    return out_idx;
+}

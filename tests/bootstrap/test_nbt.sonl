@@ -1,0 +1,57 @@
+// Test suite for Minecraft NBT Tag Serialization
+import "library/std/encoding/nbt.sonl";
+import "library/std/protocol/bytebuffer.sonl";
+
+fn main() -> i32 {
+    var buf = bytebuffer_new(64);
+
+    // Write NBT Compound:
+    // TAG_Int("Age", 20)
+    // TAG_End
+    nbt_write_int(mut ref buf, "Age", 20);
+    nbt_write_end(mut ref buf);
+
+    // Expected bytes:
+    // Tag ID: 3 (TAG_Int)
+    // Name length: 3 (i16 Big-Endian -> 0, 3)
+    // Name: 'A', 'g', 'e'
+    // Value: 20 (i32 Big-Endian -> 0, 0, 0, 20)
+    // Tag ID: 0 (TAG_End)
+    // Total: 1 + 2 + 3 + 4 + 1 = 11 bytes
+    if bytebuffer_len(ref buf) != 11 {
+        bytebuffer_destroy(mut ref buf);
+        return 1;
+    }
+
+    val tag_id = bytebuffer_read_u8(mut ref buf);
+    if tag_id != nbt_tag_int() {
+        bytebuffer_destroy(mut ref buf);
+        return 2;
+    }
+
+    val name_len = bytebuffer_read_i16_be(mut ref buf);
+    if name_len != (3 as i16) {
+        bytebuffer_destroy(mut ref buf);
+        return 3;
+    }
+
+    // Skip 3 bytes of name
+    bytebuffer_read_u8(mut ref buf);
+    bytebuffer_read_u8(mut ref buf);
+    bytebuffer_read_u8(mut ref buf);
+
+    val val_int = bytebuffer_read_i32_be(mut ref buf);
+    if val_int != 20 {
+        bytebuffer_destroy(mut ref buf);
+        return 4;
+    }
+
+    val end_tag = bytebuffer_read_u8(mut ref buf);
+    if end_tag != nbt_tag_end() {
+        bytebuffer_destroy(mut ref buf);
+        return 5;
+    }
+
+    bytebuffer_destroy(mut ref buf);
+    return 0;
+}

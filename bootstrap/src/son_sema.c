@@ -224,6 +224,59 @@ void son_sema_init(SonSema *sema, SonArena *arena) {
     sym_ncls->type = decl_ncls->func.return_type;
     sym_ncls->decl = decl_ncls;
     define_symbol(sema->global_scope, sym_ncls);
+
+    // Nonblocking socket symbols
+    const char *names_bool[] = {"son_net_set_nonblocking", "son_net_set_nodelay", "son_thread_join", "son_file_seek"};
+    for (size_t i = 0; i < sizeof(names_bool)/sizeof(names_bool[0]); i++) {
+        SonDecl *d = (SonDecl*)son_arena_alloc(arena, sizeof(SonDecl), sizeof(void*));
+        memset(d, 0, sizeof(SonDecl));
+        d->kind = DECL_FUNCTION;
+        d->name = son_slice_from_cstr(names_bool[i]);
+        d->func.return_type = (SonType*)son_arena_alloc(arena, sizeof(SonType), sizeof(void*));
+        d->func.return_type->kind = TYPE_BOOL;
+        SonSymbol *s = alloc_symbol(arena);
+        s->kind = SYM_FUNCTION; s->name = d->name; s->type = d->func.return_type; s->decl = d;
+        define_symbol(sema->global_scope, s);
+    }
+
+    const char *names_i32[] = {"son_net_poll"};
+    for (size_t i = 0; i < sizeof(names_i32)/sizeof(names_i32[0]); i++) {
+        SonDecl *d = (SonDecl*)son_arena_alloc(arena, sizeof(SonDecl), sizeof(void*));
+        memset(d, 0, sizeof(SonDecl));
+        d->kind = DECL_FUNCTION;
+        d->name = son_slice_from_cstr(names_i32[i]);
+        d->func.return_type = (SonType*)son_arena_alloc(arena, sizeof(SonType), sizeof(void*));
+        d->func.return_type->kind = TYPE_I32;
+        SonSymbol *s = alloc_symbol(arena);
+        s->kind = SYM_FUNCTION; s->name = d->name; s->type = d->func.return_type; s->decl = d;
+        define_symbol(sema->global_scope, s);
+    }
+
+    const char *names_i64[] = {"son_thread_spawn", "son_mutex_init", "son_file_open", "son_file_tell", "son_file_read_exact", "son_file_write_exact", "son_time_nanos"};
+    for (size_t i = 0; i < sizeof(names_i64)/sizeof(names_i64[0]); i++) {
+        SonDecl *d = (SonDecl*)son_arena_alloc(arena, sizeof(SonDecl), sizeof(void*));
+        memset(d, 0, sizeof(SonDecl));
+        d->kind = DECL_FUNCTION;
+        d->name = son_slice_from_cstr(names_i64[i]);
+        d->func.return_type = (SonType*)son_arena_alloc(arena, sizeof(SonType), sizeof(void*));
+        d->func.return_type->kind = TYPE_I64;
+        SonSymbol *s = alloc_symbol(arena);
+        s->kind = SYM_FUNCTION; s->name = d->name; s->type = d->func.return_type; s->decl = d;
+        define_symbol(sema->global_scope, s);
+    }
+
+    const char *names_void[] = {"son_mutex_lock", "son_mutex_unlock", "son_mutex_destroy", "son_file_close_handle", "son_sleep_us"};
+    for (size_t i = 0; i < sizeof(names_void)/sizeof(names_void[0]); i++) {
+        SonDecl *d = (SonDecl*)son_arena_alloc(arena, sizeof(SonDecl), sizeof(void*));
+        memset(d, 0, sizeof(SonDecl));
+        d->kind = DECL_FUNCTION;
+        d->name = son_slice_from_cstr(names_void[i]);
+        d->func.return_type = (SonType*)son_arena_alloc(arena, sizeof(SonType), sizeof(void*));
+        d->func.return_type->kind = TYPE_VOID;
+        SonSymbol *s = alloc_symbol(arena);
+        s->kind = SYM_FUNCTION; s->name = d->name; s->type = d->func.return_type; s->decl = d;
+        define_symbol(sema->global_scope, s);
+    }
 }
 
 static SonScope* push_scope(SonSema *sema, bool is_fn, SonType *ret_type) {

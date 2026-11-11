@@ -54,3 +54,25 @@ pub fn tcp_close(sock: mut ref TcpSocket) -> void {
         sock.handle = -1;
     }
 }
+
+pub fn tcp_set_nonblocking(sock: ref TcpSocket, nonblocking: bool) -> bool {
+    if !sock.is_connected {
+        return false;
+    }
+    return son_net_set_nonblocking(sock.handle, nonblocking);
+}
+
+pub fn tcp_set_nodelay(sock: ref TcpSocket, nodelay: bool) -> bool {
+    if !sock.is_connected {
+        return false;
+    }
+    return son_net_set_nodelay(sock.handle, nodelay);
+}
+
+// Events: 1 = POLLIN, 2 = POLLOUT, 4 = POLLERR
+pub fn tcp_poll(sock: ref TcpSocket, events: i32, timeout_ms: i32) -> i32 {
+    if !sock.is_connected {
+        return -1;
+    }
+    return son_net_poll(sock.handle, events, timeout_ms);
+}
