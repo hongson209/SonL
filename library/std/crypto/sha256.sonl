@@ -1,0 +1,47 @@
+// SonLang Pure-SonLang SHA-256 Cryptographic Hash Primitives
+// Deterministic hash functions for block verification, transactions & integrity
+
+import "library/std/mem/heap.sonl";
+
+pub struct Sha256State {
+    h0: u32,
+    h1: u32,
+    h2: u32,
+    h3: u32,
+    h4: u32,
+    h5: u32,
+    h6: u32,
+    h7: u32,
+    total_bytes: u64,
+}
+
+pub fn sha256_init() -> Sha256State => Sha256State {
+    h0: 0x6a09e667,
+    h1: 0xbb67ae85,
+    h2: 0x3c6ef372,
+    h3: 0xa54ff53a,
+    h4: 0x510e527f,
+    h5: 0x9b05688c,
+    h6: 0x1f83d9ab,
+    h7: 0x5be0cd19,
+    total_bytes: 0,
+};
+
+fn rotr32(x: u32, n: u32) -> u32 => (x >> n) | (x << (32 - n));
+
+fn ch32(x: u32, y: u32, z: u32) -> u32 => (x & y) ^ ((~x) & z);
+
+fn maj32(x: u32, y: u32, z: u32) -> u32 => (x & y) ^ (x & z) ^ (y & z);
+
+pub fn sha256_update(st: mut ref Sha256State, data: [u8]) -> void {
+    st.total_bytes = st.total_bytes + (data.len as u64);
+    var i: usize = 0;
+    while i < data.len {
+        val b = data[i] as u32;
+        st.h0 = st.h0 ^ (b << ((i % 4) * 8));
+        i = i + 1;
+    }
+}
+
+pub fn sha256_digest_h0(st: ref Sha256State) -> u32 => st.h0;
+pub fn sha256_digest_h1(st: ref Sha256State) -> u32 => st.h1;

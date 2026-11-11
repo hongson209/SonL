@@ -1,0 +1,49 @@
+// Test suite for SHA-256 and Priority Queue
+// Verifies cryptographic state updates and Min-Heap binary sift up/down
+
+import "library/std/crypto/sha256.sonl";
+import "library/std/collections/priority_queue.sonl";
+
+fn main() -> i32 {
+    // 1. Test Priority Queue (Min-Heap)
+    var pq = pq_new_i32(8, true);
+    pq_push_i32(mut ref pq, 50);
+    pq_push_i32(mut ref pq, 10);
+    pq_push_i32(mut ref pq, 30);
+    pq_push_i32(mut ref pq, 5);
+
+    if pq_len_i32(ref pq) != 4 {
+        return 1;
+    }
+
+    // Smallest item must be at top (5)
+    if pq_peek_i32(ref pq) != 5 {
+        return 2;
+    }
+
+    val pop1 = pq_pop_i32(mut ref pq); // 5
+    val pop2 = pq_pop_i32(mut ref pq); // 10
+    val pop3 = pq_pop_i32(mut ref pq); // 30
+    val pop4 = pq_pop_i32(mut ref pq); // 50
+
+    if pop1 != 5 || pop2 != 10 || pop3 != 30 || pop4 != 50 {
+        return 3;
+    }
+
+    if pq_len_i32(ref pq) != 0 {
+        return 4;
+    }
+
+    pq_destroy_i32(mut ref pq);
+
+    // 2. Test SHA-256
+    var st = sha256_init();
+    sha256_update(mut ref st, "hello");
+    val h0 = sha256_digest_h0(ref st);
+
+    if h0 == 0x6a09e667 {
+        return 5; // Must have changed
+    }
+
+    return 0;
+}

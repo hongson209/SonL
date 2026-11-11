@@ -73,7 +73,8 @@ $tests = @(
     "tests/bootstrap/test_native_backend.sonl",
     "tests/bootstrap/test_ai_tensor.sonl",
     "tests/bootstrap/test_channel.sonl",
-    "tests/bootstrap/test_graph.sonl"
+    "tests/bootstrap/test_graph.sonl",
+    "tests/bootstrap/test_pq_sha.sonl"
 )
 
 if (-not (Test-Path "build")) {

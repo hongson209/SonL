@@ -1,0 +1,115 @@
+// SonLang Binary Min/Max Binary Heap Priority Queue
+// Essential for Dijkstra/A* pathfinding, Task Schedulers, and Trading Orderbooks
+// O(log N) insertion and deletion, O(1) peek
+
+import "library/std/mem/heap.sonl";
+
+pub struct PriorityQueueI32 {
+    data: *mut i32,
+    size: usize,
+    capacity: usize,
+    is_min_heap: bool,
+}
+
+pub fn pq_new_i32(capacity: usize, is_min_heap: bool) -> PriorityQueueI32 {
+    var cap = capacity;
+    if cap == 0 {
+        cap = 16;
+    }
+    val byte_size = cap * 4;
+    val raw_ptr: *mut u8 = alloc(byte_size, 4);
+    mem_set(raw_ptr, 0, byte_size);
+
+    return PriorityQueueI32 {
+        data: raw_ptr as *mut i32,
+        size: 0,
+        capacity: cap,
+        is_min_heap: is_min_heap,
+    };
+}
+
+pub fn pq_destroy_i32(pq: mut ref PriorityQueueI32) -> void {
+    if pq.capacity > 0 {
+        val byte_size = pq.capacity * 4;
+        mem_free(pq.data as *mut u8, byte_size);
+        pq.size = 0;
+        pq.capacity = 0;
+    }
+}
+
+fn pq_compare(a: i32, b: i32, is_min: bool) -> bool {
+    if is_min {
+        return a < b;
+    }
+    return a > b;
+}
+
+pub fn pq_push_i32(pq: mut ref PriorityQueueI32, val_num: i32) -> bool {
+    if pq.size >= pq.capacity {
+        return false;
+    }
+    var idx = pq.size;
+    pq.data[idx] = val_num;
+    pq.size = pq.size + 1;
+
+    // Sift up
+    while idx > 0 {
+        val parent = (idx - 1) / 2;
+        val child_val = pq.data[idx];
+        val parent_val = pq.data[parent];
+
+        if pq_compare(child_val, parent_val, pq.is_min_heap) {
+            pq.data[idx] = parent_val;
+            pq.data[parent] = child_val;
+            idx = parent;
+        } else {
+            idx = 0; // Break
+        }
+    }
+    return true;
+}
+
+pub fn pq_peek_i32(pq: ref PriorityQueueI32) -> i32 {
+    if pq.size == 0 {
+        return -1;
+    }
+    return pq.data[0];
+}
+
+pub fn pq_pop_i32(pq: mut ref PriorityQueueI32) -> i32 {
+    if pq.size == 0 {
+        return -1;
+    }
+    val top = pq.data[0];
+    pq.size = pq.size - 1;
+
+    if pq.size > 0 {
+        pq.data[0] = pq.data[pq.size];
+        var idx: usize = 0;
+
+        // Sift down
+        while (idx * 2 + 1) < pq.size {
+            var best = idx * 2 + 1;
+            val right = best + 1;
+
+            if right < pq.size {
+                if pq_compare(pq.data[right], pq.data[best], pq.is_min_heap) {
+                    best = right;
+                }
+            }
+
+            if pq_compare(pq.data[best], pq.data[idx], pq.is_min_heap) {
+                val temp = pq.data[idx];
+                pq.data[idx] = pq.data[best];
+                pq.data[best] = temp;
+                idx = best;
+            } else {
+                idx = pq.size; // Break
+            }
+        }
+    }
+
+    return top;
+}
+
+pub fn pq_len_i32(pq: ref PriorityQueueI32) -> usize => pq.size;
