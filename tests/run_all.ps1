@@ -81,6 +81,15 @@ if (-not (Test-Path "build")) {
     New-Item -ItemType Directory -Path "build" | Out-Null
 }
 
+if (-not (Test-Path "bin/son.exe")) {
+    if (-not (Test-Path "bin")) {
+        New-Item -ItemType Directory -Path "bin" | Out-Null
+    }
+    Write-Host "Building bin/son.exe from bootstrap/src..." -ForegroundColor Yellow
+    clang -std=c11 -O2 -Ibootstrap/include bootstrap/src/*.c -o bin/son.exe -lws2_32
+    if ($LASTEXITCODE -ne 0) { throw "Failed to build bootstrap compiler bin/son.exe" }
+}
+
 Write-Host "Running SonLang Test Suite..." -ForegroundColor Cyan
 
 foreach ($t in $tests) {
