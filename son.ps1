@@ -13,6 +13,19 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+if (-not (Test-Path "bin/son.exe")) {
+    if (-not (Test-Path "bin")) {
+        New-Item -ItemType Directory -Path "bin" | Out-Null
+    }
+    Write-Host "Bootstrap binary not found. Building bin/son.exe from bootstrap/src..." -ForegroundColor Yellow
+    clang -std=c11 -O2 -Ibootstrap/include bootstrap/src/*.c -o bin/son.exe -lws2_32
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to build bootstrap compiler bin/son.exe."
+        exit 1
+    }
+    Write-Host "Bootstrap compiler bin/son.exe built successfully." -ForegroundColor Green
+}
+
 function Show-Help {
     Write-Host "SonLang Unified Toolchain (son) v0.1" -ForegroundColor Cyan
     Write-Host "Usage: son <command> [options]`n"
