@@ -1,6 +1,82 @@
 #include "../include/son_common.h"
 #include <stdarg.h>
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <direct.h>
+#else
+#include <unistd.h>
+#include <sys/stat.h>
+#endif
+
+static char g_sdk_root[1024] = ".";
+
+static bool dir_has_library(const char *dir) {
+    char probe[1024];
+    snprintf(probe, sizeof(probe), "%s/library/core/types.sonl", dir);
+    FILE *f = fopen(probe, "rb");
+    if (f) {
+        fclose(f);
+        return true;
+    }
+    return false;
+}
+
+void son_init_sdk_root(const char *argv0) {
+    // 1. Highest priority: explicit environment variable
+    const char *env_home = getenv("SON_HOME");
+    if (!env_home) env_home = getenv("SONLANG_HOME");
+    if (env_home && env_home[0] != '\0' && dir_has_library(env_home)) {
+        snprintf(g_sdk_root, sizeof(g_sdk_root), "%s", env_home);
+        return;
+    }
+
+    // 2. Check current working directory
+    if (dir_has_library(".")) {
+        snprintf(g_sdk_root, sizeof(g_sdk_root), ".");
+        return;
+    }
+
+    // 3. Auto-detect relative to the running compiler executable (<sdk_root>/bin/son.exe or <sdk_root>/son.exe)
+    char exe_path[1024] = {0};
+#ifdef _WIN32
+    DWORD len = GetModuleFileNameA(NULL, exe_path, (DWORD)(sizeof(exe_path) - 1));
+    if (len == 0 && argv0) {
+        snprintf(exe_path, sizeof(exe_path), "%s", argv0);
+    }
+#else
+    ssize_t rlen = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    if (rlen > 0) {
+        exe_path[rlen] = '\0';
+    } else if (argv0) {
+        snprintf(exe_path, sizeof(exe_path), "%s", argv0);
+    }
+#endif
+
+    // Normalize slashes to '/'
+    for (char *p = exe_path; *p; p++) {
+        if (*p == '\\') *p = '/';
+    }
+
+    // Walk up parent directories from exe_path to find 'library/core/types.sonl'
+    char candidate[1024];
+    snprintf(candidate, sizeof(candidate), "%s", exe_path);
+    for (int depth = 0; depth < 4; depth++) {
+        char *slash = strrchr(candidate, '/');
+        if (!slash) break;
+        *slash = '\0';
+        if (candidate[0] != '\0' && dir_has_library(candidate)) {
+            snprintf(g_sdk_root, sizeof(g_sdk_root), "%s", candidate);
+            return;
+        }
+    }
+}
+
+const char* son_get_sdk_root(void) {
+    return g_sdk_root;
+}
+
 void son_arena_init(SonArena *arena, size_t default_block_size) {
     arena->current = NULL;
     arena->default_block_size = default_block_size ? default_block_size : (64 * 1024);

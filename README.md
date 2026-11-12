@@ -163,34 +163,39 @@ SonLang/
 │   ├── bootstrap/             # Language feature tests and borrow checker validations
 │   ├── reference_apps/        # Production reference applications (Game Server, Web API)
 │   └── selfhost/              # Multi-stage deterministic self-hosting convergence test
+├── bootstrap/                 # Stage 0 C11 compiler source (builds bin/son.exe; keep intact)
 ├── AGENTS.md                  # Machine guide for autonomous AI coding agents
 ├── HELP.md                    # Quick-start guide and developer cheatsheet
 ├── son.toml                   # Project manifest and package configuration
-└── son.ps1                    # Unified CLI driver
+└── son.ps1                    # Optional Windows PowerShell wrapper & test runner
 ```
 
 ---
 
 ## Toolchain Usage (`son`)
 
-```powershell
-# Compile to native binary
-./son.ps1 build tests/bootstrap/hello.sonl
+`son` (`bin/son.exe`) is a native CLI executable that runs in **CMD, Bash, Zsh, and PowerShell** without needing wrapper scripts. Add `bin/` to your `PATH` (or set `SON_HOME`) and compile/run from **any directory** — `import "std/..."`, `"core/..."`, and `"library/..."` resolve globally without copying `library/` into projects:
 
-# Direct compilation via native LLVM backend
-./son.ps1 build tests/bootstrap/hello.sonl --native
+```bash
+# Build native Stage 0 compiler binary once (if bin/son.exe is not present)
+clang -std=c11 -O2 -Ibootstrap/include bootstrap/src/*.c -o bin/son.exe -lws2_32
 
-# Compile and run immediately
-./son.ps1 run tests/bootstrap/hello.sonl
+# Compile and run directly in any terminal (no PowerShell needed)
+bin\son.exe run tests/bootstrap/hello.sonl
+
+# Compile to native executable (C or --native LLVM IR backend)
+son build app.sonl
+son build app.sonl --native
+
+# Scaffold a clean external project (automatically links global SDK stdlib)
+son new my_project
 
 # Inspect intermediate representations
-./son.ps1 emit-ir tests/bootstrap/hello.sonl     # Emit SSA SonIR
-./son.ps1 emit-llvm tests/bootstrap/hello.sonl   # Emit LLVM IR
+son emit-ir tests/bootstrap/hello.sonl
+son emit-llvm tests/bootstrap/hello.sonl
 
-# Execute full test suite across 70 workloads
+# Execute full test suite across 70 workloads & verify self-hosting (PowerShell)
 ./son.ps1 test
-
-# Verify bit-for-bit self-hosting convergence
 ./son.ps1 verify-selfhost
 ```
 

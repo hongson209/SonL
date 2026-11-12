@@ -635,6 +635,45 @@ static char* parser_read_file(const char *path, size_t *out_len) {
     return buf;
 }
 
+static char* parser_read_file_resolved(const char *import_path, const char *current_file, size_t *out_len) {
+    // 1. Try exact path (relative to CWD or absolute)
+    char *buf = parser_read_file(import_path, out_len);
+    if (buf) return buf;
+
+    // 2. Try relative to current file's directory
+    if (current_file) {
+        char dir_buf[1024];
+        snprintf(dir_buf, sizeof(dir_buf), "%s", current_file);
+        for (char *p = dir_buf; *p; p++) {
+            if (*p == '\\') *p = '/';
+        }
+        char *slash = strrchr(dir_buf, '/');
+        if (slash) {
+            *slash = '\0';
+            char candidate[1024];
+            snprintf(candidate, sizeof(candidate), "%s/%s", dir_buf, import_path);
+            buf = parser_read_file(candidate, out_len);
+            if (buf) return buf;
+        }
+    }
+
+    // 3. Try global SDK root (<SON_HOME>/<import_path>)
+    const char *sdk_root = son_get_sdk_root();
+    if (sdk_root && sdk_root[0] != '\0') {
+        char candidate[1024];
+        snprintf(candidate, sizeof(candidate), "%s/%s", sdk_root, import_path);
+        buf = parser_read_file(candidate, out_len);
+        if (buf) return buf;
+
+        // 4. Shorthand standard library import: e.g. import "std/os/net.sonl" or "core/string.sonl"
+        snprintf(candidate, sizeof(candidate), "%s/library/%s", sdk_root, import_path);
+        buf = parser_read_file(candidate, out_len);
+        if (buf) return buf;
+    }
+
+    return NULL;
+}
+
 static SonDecl* parse_top_level_decl(SonParser *parser, SonModule *module) {
     if (match(parser, TOKEN_KW_IMPORT, NULL)) {
         SonToken path_tok = expect(parser, TOKEN_STRING_LITERAL, "for imported file path");
@@ -644,7 +683,7 @@ static SonDecl* parse_top_level_decl(SonParser *parser, SonModule *module) {
         snprintf(import_path, sizeof(import_path), "%.*s", (int)path_tok.text.length, path_tok.text.data);
 
         size_t imp_len = 0;
-        char *imp_src_raw = parser_read_file(import_path, &imp_len);
+        char *imp_src_raw = parser_read_file_resolved(import_path, path_tok.loc.filename, &imp_len);
         if (!imp_src_raw) {
             son_error_report(path_tok.loc, "Cannot open imported file '%s'", import_path);
             parser->has_error = true;

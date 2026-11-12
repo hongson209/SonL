@@ -104,27 +104,28 @@ val resp = router_dispatch(req);
 
 ---
 
-## 3. CLI Commands Reference (`son`)
+## 3. Native CLI Commands Reference (`son`)
 
-```powershell
-# Compile file to native executable
-./son.ps1 build src/main.sonl
+The native `son` compiler (`bin/son.exe`) works directly in **CMD, PowerShell, Bash, and Zsh** without requiring any PowerShell wrapper scripts, and automatically resolves `import "std/..."` / `import "core/..."` from the global SDK (`SON_HOME` or relative to `son.exe`) — **no need to copy `library/` into your project**.
 
-# Compile with maximum optimization (-O3)
-./son.ps1 build src/main.sonl -O3
+```bash
+# Build native executable
+son build src/main.sonl
 
-# Build and run immediately
-./son.ps1 run src/main.sonl
+# Compile with direct LLVM backend
+son build src/main.sonl --native
 
-# Manage packages
-./son.ps1 pkg install
-./son.ps1 pkg add https://github.com/user/lib
+# Build and execute immediately in any terminal
+son run src/main.sonl
 
-# Inspect representations
-./son.ps1 emit-ir src/main.sonl      # SonIR SSA format
-./son.ps1 emit-llvm src/main.sonl    # LLVM IR (.ll)
+# Create a clean project (uses global stdlib automatically)
+son new my_app
 
-# Run test suite
+# Inspect intermediate representations
+son emit-ir src/main.sonl      # SonIR SSA format
+son emit-llvm src/main.sonl    # LLVM IR (.ll)
+
+# Run repository conformance suite (Windows PowerShell)
 ./son.ps1 test
 ```
 

@@ -6,14 +6,18 @@ This document is the authoritative technical reference for autonomous coding age
 
 ## 1. Core Language Invariants
 
-### 1.1 File Extension and Imports
+### 1.1 File Extension, Imports, and Global SDK Resolution
 - All SonLang source files MUST use the `.sonl` extension.
-- Imports use double-quoted paths relative to the project root:
+- **Do NOT copy/clone `library/` into external projects.** The compiler (`bin/son.exe`) automatically resolves standard library paths via `SON_HOME` or relative to the `son` binary:
   ```sonl
-  import "library/core/string.sonl";
-  import "library/std/collections/vec.sonl";
-  import "library/std/encoding/json.sonl";
+  import "core/string.sonl";          // Shorthand (resolved globally from SDK library/)
+  import "std/collections/vec.sonl";  // Shorthand (works from any project folder)
+  import "std/os/net.sonl";
+  import "library/std/encoding/json.sonl"; // Full path (also supported)
   ```
+- **Toolchain (`bin/son.exe` vs `bootstrap/`)**:
+  - `bootstrap/` is the Stage 0 C11 compiler/CLI driver source that builds `bin/son.exe`. Do NOT delete `bootstrap/` when cleaning a repo, and do NOT confuse Stage 0 compiler source with user code.
+  - Run `son run <file.sonl>` or `son build <file.sonl>` directly in CMD, Bash, or PowerShell (PowerShell `son.ps1` is optional).
 - No circular dependencies are permitted.
 
 ### 1.2 Variable Immutability by Default
@@ -118,23 +122,41 @@ fn handle_action(act: Action) -> i32 => match act {
 | `library/core/string.sonl` | `str_starts_with`, `str_ends_with`, `str_find_char`, `str_parse_i32` | ASCII string operations |
 | `library/core/fmt.sonl` | `Formatter`, `fmt_new`, `fmt_write_str`, `fmt_write_i32`, `fmt_finish` | Zero-allocation string formatting |
 | `library/std/mem/arena.sonl` | `Arena`, `arena_new`, `arena_alloc` | $O(1)$ Region-based scoped memory arenas |
+| `library/std/mem/heap.sonl` | `alloc`, `mem_free`, `mem_realloc`, `mem_set`, `mem_copy` | Dynamic heap allocator |
+| `library/std/mem/pool.sonl` | `FixedPool`, `pool_new`, `pool_alloc`, `pool_reset` | $O(1)$ Fixed-block pool allocator |
 | `library/std/mem/allocator.sonl` | `HeapBlock`, `heap_alloc`, `heap_free` | Safe heap memory allocator |
-| `library/std/collections/vec.sonl` | `Vec[T]`, `vec_new_i32`, `vec_push_i32`, `vec_pop_i32`, `vec_get_i32` | Dynamic array |
-| `library/std/collections/map.sonl` | `Map`, `map_new`, `map_insert`, `map_len`, `map_clear` | Fast hash map |
+| `library/std/collections/vec.sonl` | `Vec[T]`, `DynamicVecI32`, `dvec_push_i32`, `dvec_pop_i32` | Static & auto-resizing dynamic arrays |
+| `library/std/collections/hashmap.sonl` | `HashMapI32`, `hashmap_new_i32`, `hashmap_insert_i32`, `hashmap_get_i32` | Open-addressing hash map |
+| `library/std/collections/priority_queue.sonl` | `PriorityQueueI32`, `pq_new_i32`, `pq_push_i32`, `pq_pop_i32` | Binary Min/Max Heap ($O(\log N)$) |
+| `library/std/collections/map.sonl` | `Map`, `map_new`, `map_insert`, `map_len`, `map_clear` | Fast key/value map |
 | `library/std/collections/ring.sonl` | `RingBuffer`, `ring_new`, `ring_advance_tail`, `ring_advance_head` | Circular lock-free queue |
+| `library/std/os/net.sonl` | `TcpSocket`, `tcp_listen`, `tcp_accept`, `tcp_poll`, `tcp_set_nonblocking`, `tcp_set_nodelay` | Non-blocking TCP sockets & WSAPoll/poll |
+| `library/std/os/fs.sonl` | `File`, `file_open`, `file_seek`, `file_tell`, `file_read_exact`, `fs_write_file` | Sequential & 64-bit random-access File I/O |
+| `library/std/protocol/bytebuffer.sonl` | `ByteBuffer`, `bytebuffer_write_i32_be`, `bytebuffer_read_varint` | Auto-resizing Big-Endian/VarInt buffer |
+| `library/std/protocol/endian.sonl` | `swap_u16`, `swap_u32`, `to_be16`, `to_be32` | Network byte order converters |
+| `library/std/protocol/varint.sonl` | 7-bit zigzag VarInt encoder/decoder | Minecraft/Protobuf VarInt |
+| `library/std/protocol/minecraft.sonl` | Handshake & JSON Status Ping | Minecraft server protocol |
+| `library/std/encoding/nbt.sonl` | `nbt_write_int`, `nbt_write_tag_header`, `nbt_write_end` | Minecraft NBT v1.20 binary serializer |
+| `library/std/compress/zlib.sonl` | `compress_slice`, `decompress_slice` | Zero-dependency byte compression |
 | `library/std/net/http.sonl` | `HttpRequest`, `HttpResponse`, `http_parse_request`, `http_response_ok` | HTTP 1.1 request/response parser |
 | `library/std/net/server.sonl` | `Router`, `router_new`, `router_dispatch` | Microservice HTTP router |
 | `library/std/net/url.sonl` | `ParsedUrl`, `url_parse` | URL string and query parameter parser |
 | `library/std/encoding/json.sonl` | `json_reader_new`, `json_next_token`, `json_find_field`, `json_token_as_i32` | Sub-10ms JSON parser |
 | `library/std/crypto/base64.sonl` | `base64_encode`, `base64_encoded_len` | Base64 encoder/decoder |
 | `library/std/crypto/crc32.sonl` | `crc32_calculate(data: [u8]) -> u32` | Hardware-grade CRC-32 integrity checker |
+| `library/std/crypto/sha256.sonl` | `Sha256State`, `sha256_init`, `sha256_update`, `sha256_digest_h0` | Pure SonLang SHA-256 primitives |
+| `library/std/sync/thread.sonl` | `Thread`, `thread_spawn`, `thread_join` | Native OS threads (Win32 / pthread) |
+| `library/std/sync/mutex.sonl` | `Mutex`, `mutex_new`, `mutex_lock`, `mutex_unlock` | Native OS mutual exclusion lock |
+| `library/std/sync/channel.sonl` | `ChannelI32`, `channel_new_i32`, `channel_send_i32`, `channel_recv_i32` | Lock-free atomic MPSC ring channel |
 | `library/std/sync/atomic.sonl` | `AtomicI32`, `atomic_new_i32`, `atomic_load_i32`, `atomic_fetch_add_i32` | Hardware atomic operations without locks |
 | `library/std/sync/spinlock.sonl` | `Spinlock`, `spinlock_new`, `spinlock_try_lock`, `spinlock_unlock` | Zero-overhead spinlock primitives |
+| `library/std/ai/tensor.sonl` | `Tensor2D`, `tensor_new`, `tensor_matmul`, `tensor_relu` | 32-byte aligned AI matrix/tensor engine |
+| `library/std/ai/graph.sonl` | `ComputeGraph`, `graph_new`, `graph_add_node` | Static memory AI execution DAG |
 | `library/std/ai/vector.sonl` | `vec_dot_product`, `vec_magnitude_sq`, `vec_cosine_similarity_scaled` | Vector similarity & AI embeddings engine |
+| `library/std/math/bits.sonl` | `bswap16`, `bswap32`, `bswap64`, `extract_bits_u64` | 64-bit bitwise & packing intrinsics |
 | `library/std/finance/orderbook.sonl`| `Order`, `TradeResult`, `match_single_order` | Low-latency orderbook matching engine |
 | `library/std/game/ecs.sonl` | `Position`, `Velocity`, `ecs_update_single_position` | High-frequency Entity Component System |
-| `library/std/time.sonl` | `Instant`, `Duration`, `instant_now`, `duration_between`, `sleep_ms` | High-resolution monotonic timers |
-| `library/std/os/fs.sonl` | `fs_write_file`, `fs_write_file_len` | File I/O |
+| `library/std/time.sonl` | `Instant`, `instant_now`, `duration_between`, `time_nanos`, `sleep_us` | Monotonic nanosecond/microsecond timers |
 | `library/std/os/path.sonl` | `path_join`, `path_has_extension`, `path_file_name` | OS path manipulation |
 | `library/std/cli/args.sonl` | `cli_has_flag`, `cli_parse_port_or_default` | CLI argument parser |
 | `library/std/os/process.sonl` | `ProcessEnv`, `process_env`, `process_exit` | Process environment |
@@ -144,5 +166,6 @@ fn handle_action(act: Action) -> i32 => match act {
 ## 5. Automated Verification Checklist for Agents
 
 When generating or editing `.sonl` code:
-1. Run `./son.ps1 test` to verify all 50 test suites pass.
-2. Clean code convention: Do NOT add repetitive banner comments (e.g., `// SonLang Standard Library:...`). Write clean, self-documenting code.
+1. Run `bin\son.exe run <file.sonl>` (or `son run <file.sonl>` when `bin/` is in `PATH`) directly in CMD/Bash/PowerShell — no PowerShell wrapper required for compiling/running user apps.
+2. Run `./son.ps1 test` inside the repo root to verify all 70 test suites pass.
+3. Clean code convention: Do NOT add repetitive banner comments (e.g., `// SonLang Standard Library:...`). Write clean, self-documenting code.

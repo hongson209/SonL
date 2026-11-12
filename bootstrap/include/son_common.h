@@ -63,4 +63,8 @@ void son_arena_free_all(SonArena *arena);
 // Diagnostic reporting
 void son_error_report(SonSourceLoc loc, const char *fmt, ...);
 
+// Global SDK / Standard Library resolution
+void son_init_sdk_root(const char *argv0);
+const char* son_get_sdk_root(void);
+
 #endif // SON_COMMON_H

@@ -7,6 +7,14 @@
 #include "../include/son_ai.h"
 #include "../include/son_codegen.h"
 
+#ifdef _WIN32
+#include <direct.h>
+#define son_mkdir(p) _mkdir(p)
+#else
+#include <sys/stat.h>
+#define son_mkdir(p) mkdir(p, 0755)
+#endif
+
 static char* read_file_to_string(const char *path, size_t *out_len) {
     FILE *f = fopen(path, "rb");
     if (!f) {
@@ -36,22 +44,38 @@ static char* read_file_to_string(const char *path, size_t *out_len) {
     return buf;
 }
 
-int main(int argc, char **argv) {
-    if (argc < 2) {
-        printf("SonLang Stage 0 Bootstrap Compiler (son0)\n");
-        printf("Usage: son0 <input.sonl> [-o <output.c>]\n");
-        return 1;
+static void print_help(void) {
+    printf("SonLang Native Compiler & Toolchain (son) v1.3.0\n");
+    printf("SDK / Standard Library Root: %s\n\n", son_get_sdk_root());
+    printf("Usage:\n");
+    printf("  son run <file.sonl> [options]     Compile and execute immediately (no PowerShell needed)\n");
+    printf("  son build <file.sonl> [options]   Compile to native executable (--native for LLVM IR)\n");
+    printf("  son new <project_name>            Create a clean SonLang project (no library copy needed)\n");
+    printf("  son emit-llvm <file.sonl>         Emit native LLVM IR (.ll)\n");
+    printf("  son emit-ir <file.sonl>           Emit SSA SonIR\n");
+    printf("  son query <file.sonl> [flags]     AI semantic queries (--ast, --symbols, --diagnostics)\n");
+    printf("  son <file.sonl> -o <out.c>        Direct C99 compiler invocation\n");
+}
+
+static void extract_stem(const char *path, char *out_stem, size_t max_len) {
+    const char *base = path;
+    for (const char *p = path; *p; p++) {
+        if (*p == '/' || *p == '\\') base = p + 1;
     }
+    snprintf(out_stem, max_len, "%s", base);
+    char *dot = strrchr(out_stem, '.');
+    if (dot) *dot = '\0';
+}
 
-    const char *input_path = argv[1];
-    const char *output_path = NULL;
-    bool emit_ir = false;
-    bool emit_llvm = false;
-    bool query_ast = false;
-    bool query_symbols = false;
-    bool query_diagnostics = false;
-
-    // Validate file extension
+static int compile_source_to_file(
+    const char *input_path,
+    const char *output_path,
+    bool emit_ir,
+    bool emit_llvm,
+    bool query_ast,
+    bool query_symbols,
+    bool query_diagnostics
+) {
     size_t path_len = strlen(input_path);
     if (path_len >= 5 && strcmp(input_path + path_len - 5, ".sonl") == 0) {
         // Official extension (.sonl)
@@ -59,22 +83,6 @@ int main(int argc, char **argv) {
         fprintf(stderr, "warning: '.son' extension is deprecated; use official '.sonl' extension\n");
     } else {
         fprintf(stderr, "warning: input file '%s' does not have official '.sonl' extension\n", input_path);
-    }
-
-    for (int i = 2; i < argc; i++) {
-        if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
-            output_path = argv[++i];
-        } else if (strcmp(argv[i], "--emit-ir") == 0) {
-            emit_ir = true;
-        } else if (strcmp(argv[i], "--emit-llvm") == 0) {
-            emit_llvm = true;
-        } else if (strcmp(argv[i], "--query-ast") == 0) {
-            query_ast = true;
-        } else if (strcmp(argv[i], "--query-symbols") == 0) {
-            query_symbols = true;
-        } else if (strcmp(argv[i], "--query-diagnostics") == 0) {
-            query_diagnostics = true;
-        }
     }
 
     size_t source_len = 0;
@@ -146,7 +154,6 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    // Build SonIR SSA module
     SonIRModule *ir_module = son_ir_build_module(&arena, module);
 
     if (emit_ir) {
@@ -161,9 +168,7 @@ int main(int argc, char **argv) {
             }
         }
         son_ir_dump(ir_out, ir_module);
-        if (output_path) {
-            fclose(ir_out);
-        }
+        if (output_path) fclose(ir_out);
         free(source);
         son_arena_free_all(&arena);
         return 0;
@@ -181,9 +186,7 @@ int main(int argc, char **argv) {
             }
         }
         bool ok = son_llvm_emit(llvm_out, ir_module);
-        if (output_path) {
-            fclose(llvm_out);
-        }
+        if (output_path) fclose(llvm_out);
         free(source);
         son_arena_free_all(&arena);
         return ok ? 0 : 1;
@@ -204,12 +207,196 @@ int main(int argc, char **argv) {
     son_codegen_init(&codegen, out_file);
     bool ok = son_codegen_emit_module(&codegen, module);
 
-    if (output_path) {
-        fclose(out_file);
-    }
-
+    if (output_path) fclose(out_file);
     free(source);
     son_arena_free_all(&arena);
-
     return ok ? 0 : 1;
+}
+
+static int cmd_new_project(const char *project_name) {
+    if (!project_name || project_name[0] == '\0') {
+        fprintf(stderr, "error: missing project name. Usage: son new <project_name>\n");
+        return 1;
+    }
+
+    char src_dir[512], toml_path[512], main_path[512];
+    son_mkdir(project_name);
+    snprintf(src_dir, sizeof(src_dir), "%s/src", project_name);
+    son_mkdir(src_dir);
+
+    snprintf(toml_path, sizeof(toml_path), "%s/son.toml", project_name);
+    FILE *tf = fopen(toml_path, "w");
+    if (tf) {
+        fprintf(tf, "[package]\nname = \"%s\"\nversion = \"0.1.0\"\nedition = \"2026\"\nentry = \"src/main.sonl\"\n", project_name);
+        fclose(tf);
+    }
+
+    snprintf(main_path, sizeof(main_path), "%s/src/main.sonl", project_name);
+    FILE *mf = fopen(main_path, "w");
+    if (mf) {
+        fprintf(mf, "import \"core/types.sonl\";\n\nfn main() -> i32 {\n    return 0;\n}\n");
+        fclose(mf);
+    }
+
+    printf("Created clean SonLang project '%s' (uses global SDK stdlib directly, no library/ copy needed).\n", project_name);
+    printf("Run it from anywhere:\n  cd %s && son run src/main.sonl\n", project_name);
+    return 0;
+}
+
+static int cmd_build_or_run(int argc, char **argv, bool auto_run) {
+    if (argc < 3) {
+        fprintf(stderr, "error: missing source file. Usage: son %s <file.sonl> [options]\n", auto_run ? "run" : "build");
+        return 1;
+    }
+
+    const char *input_path = argv[2];
+    const char *custom_out = NULL;
+    bool use_native_llvm = false;
+    bool use_freestanding = false;
+    char extra_flags[1024] = "";
+
+    for (int i = 3; i < argc; i++) {
+        if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
+            custom_out = argv[++i];
+        } else if (strcmp(argv[i], "--native") == 0 || strcmp(argv[i], "-native") == 0) {
+            use_native_llvm = true;
+        } else if (strcmp(argv[i], "--freestanding") == 0) {
+            use_freestanding = true;
+        } else if (strncmp(argv[i], "-l", 2) == 0 || strncmp(argv[i], "-L", 2) == 0 || strncmp(argv[i], "-Wl", 3) == 0) {
+            strncat(extra_flags, " ", sizeof(extra_flags) - strlen(extra_flags) - 1);
+            strncat(extra_flags, argv[i], sizeof(extra_flags) - strlen(extra_flags) - 1);
+        }
+    }
+
+    char stem[256];
+    extract_stem(input_path, stem, sizeof(stem));
+
+    son_mkdir("build");
+
+    char inter_path[512];
+    char exe_path[512];
+#ifdef _WIN32
+    if (custom_out) snprintf(exe_path, sizeof(exe_path), "%s", custom_out);
+    else snprintf(exe_path, sizeof(exe_path), "build/%s.exe", stem);
+#else
+    if (custom_out) snprintf(exe_path, sizeof(exe_path), "%s", custom_out);
+    else snprintf(exe_path, sizeof(exe_path), "build/%s", stem);
+#endif
+
+    if (use_native_llvm || use_freestanding) {
+        snprintf(inter_path, sizeof(inter_path), "build/%s.ll", stem);
+    } else {
+        snprintf(inter_path, sizeof(inter_path), "build/%s.c", stem);
+    }
+
+    int comp_rc = compile_source_to_file(input_path, inter_path, false, (use_native_llvm || use_freestanding), false, false, false);
+    if (comp_rc != 0) return comp_rc;
+
+    char cmd[2048];
+#ifdef _WIN32
+    if (use_freestanding) {
+        snprintf(cmd, sizeof(cmd), "clang -O3 -nostdlib -fuse-ld=lld -Wno-override-module -Wl,/entry:main -Wl,/subsystem:console -lkernel32 \"%s\" -o \"%s\" %s", inter_path, exe_path, extra_flags);
+    } else if (use_native_llvm) {
+        snprintf(cmd, sizeof(cmd), "clang -O3 -Wno-override-module \"%s\" -o \"%s\" -lws2_32 %s", inter_path, exe_path, extra_flags);
+    } else {
+        snprintf(cmd, sizeof(cmd), "clang -O3 \"%s\" -o \"%s\" -lws2_32 %s", inter_path, exe_path, extra_flags);
+    }
+#else
+    if (use_native_llvm || use_freestanding) {
+        snprintf(cmd, sizeof(cmd), "clang -O3 -Wno-override-module \"%s\" -o \"%s\" -lpthread -lm %s", inter_path, exe_path, extra_flags);
+    } else {
+        snprintf(cmd, sizeof(cmd), "clang -O3 \"%s\" -o \"%s\" -lpthread -lm %s", inter_path, exe_path, extra_flags);
+    }
+#endif
+
+    int link_rc = system(cmd);
+    if (link_rc != 0) {
+        fprintf(stderr, "error: native build/link failed (exit code %d)\n", link_rc);
+        return link_rc;
+    }
+
+    if (!auto_run) {
+        printf("Built native executable: %s\n", exe_path);
+        return 0;
+    }
+
+    char run_cmd[560];
+#ifdef _WIN32
+    for (char *p = exe_path; *p; p++) { if (*p == '/') *p = '\\'; }
+    snprintf(run_cmd, sizeof(run_cmd), "\"%s\"", exe_path);
+#else
+    snprintf(run_cmd, sizeof(run_cmd), "./\"%s\"", exe_path);
+#endif
+    return system(run_cmd);
+}
+
+int main(int argc, char **argv) {
+    son_init_sdk_root(argv[0]);
+
+    if (argc < 2) {
+        print_help();
+        return 1;
+    }
+
+    const char *cmd = argv[1];
+
+    if (strcmp(cmd, "help") == 0 || strcmp(cmd, "--help") == 0 || strcmp(cmd, "-h") == 0) {
+        print_help();
+        return 0;
+    }
+    if (strcmp(cmd, "--version") == 0 || strcmp(cmd, "version") == 0) {
+        printf("SonLang Toolchain v1.3.0\n");
+        return 0;
+    }
+    if (strcmp(cmd, "new") == 0) {
+        return cmd_new_project(argc >= 3 ? argv[2] : NULL);
+    }
+    if (strcmp(cmd, "build") == 0) {
+        return cmd_build_or_run(argc, argv, false);
+    }
+    if (strcmp(cmd, "run") == 0) {
+        return cmd_build_or_run(argc, argv, true);
+    }
+    if (strcmp(cmd, "emit-ir") == 0 && argc >= 3) {
+        return compile_source_to_file(argv[2], (argc >= 5 && strcmp(argv[3], "-o") == 0) ? argv[4] : NULL, true, false, false, false, false);
+    }
+    if (strcmp(cmd, "emit-llvm") == 0 && argc >= 3) {
+        return compile_source_to_file(argv[2], (argc >= 5 && strcmp(argv[3], "-o") == 0) ? argv[4] : NULL, false, true, false, false, false);
+    }
+    if (strcmp(cmd, "query") == 0 && argc >= 3) {
+        bool q_ast = false, q_sym = false, q_diag = false;
+        for (int i = 3; i < argc; i++) {
+            if (strcmp(argv[i], "--ast") == 0) q_ast = true;
+            else if (strcmp(argv[i], "--symbols") == 0) q_sym = true;
+            else if (strcmp(argv[i], "--diagnostics") == 0) q_diag = true;
+        }
+        return compile_source_to_file(argv[2], NULL, false, false, q_ast, q_sym, q_diag);
+    }
+
+    // Legacy direct compiler mode: son <input.sonl> [-o <out.c>] [--emit-llvm ...]
+    const char *input_path = argv[1];
+    const char *output_path = NULL;
+    bool emit_ir = false;
+    bool emit_llvm = false;
+    bool query_ast = false;
+    bool query_symbols = false;
+    bool query_diagnostics = false;
+
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
+            output_path = argv[++i];
+        } else if (strcmp(argv[i], "--emit-ir") == 0) {
+            emit_ir = true;
+        } else if (strcmp(argv[i], "--emit-llvm") == 0) {
+            emit_llvm = true;
+        } else if (strcmp(argv[i], "--query-ast") == 0) {
+            query_ast = true;
+        } else if (strcmp(argv[i], "--query-symbols") == 0) {
+            query_symbols = true;
+        } else if (strcmp(argv[i], "--query-diagnostics") == 0) {
+            query_diagnostics = true;
+        }
+    }
+
+    return compile_source_to_file(input_path, output_path, emit_ir, emit_llvm, query_ast, query_symbols, query_diagnostics);
 }
