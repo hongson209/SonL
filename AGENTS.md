@@ -157,6 +157,7 @@ fn handle_action(act: Action) -> i32 => match act {
 | `library/std/finance/orderbook.sonl`| `Order`, `TradeResult`, `match_single_order` | Low-latency orderbook matching engine |
 | `library/std/game/ecs.sonl` | `Position`, `Velocity`, `ecs_update_single_position` | High-frequency Entity Component System |
 | `library/std/time.sonl` | `Instant`, `instant_now`, `duration_between`, `time_nanos`, `sleep_us` | Monotonic nanosecond/microsecond timers |
+| `library/std/io.sonl` | `print`, `println`, `eprintln`, `print_i32`, `print_i64`, `print_f64` | Slice-safe console stdout/stderr I/O |
 | `library/std/os/path.sonl` | `path_join`, `path_has_extension`, `path_file_name` | OS path manipulation |
 | `library/std/cli/args.sonl` | `cli_has_flag`, `cli_parse_port_or_default` | CLI argument parser |
 | `library/std/os/process.sonl` | `ProcessEnv`, `process_env`, `process_exit` | Process environment |
@@ -167,5 +168,5 @@ fn handle_action(act: Action) -> i32 => match act {
 
 When generating or editing `.sonl` code:
 1. Run `bin\son.exe run <file.sonl>` (or `son run <file.sonl>` when `bin/` is in `PATH`) directly in CMD/Bash/PowerShell — no PowerShell wrapper required for compiling/running user apps.
-2. Run `./son.ps1 test` inside the repo root to verify all 70 test suites pass.
+2. Run `bin\son.exe check <file.sonl>` for fast syntax/type/borrow verification, or `./son.ps1 test` inside the repo root to verify all 74 test suites pass.
 3. Clean code convention: Do NOT add repetitive banner comments (e.g., `// SonLang Standard Library:...`). Write clean, self-documenting code.

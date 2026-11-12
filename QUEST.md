@@ -53,9 +53,9 @@
   - [ ] Nhân bản mã nguồn cho các kiểu dữ liệu chung như `Vec[T]`, `Option[T]`, `Result[T, E]`.
   - [ ] Tự động sinh mã LLVM cụ thể cho từng kiểu dữ liệu thực tế: `Vec_i32`, `Vec_u8`, `Vec_Point`.
 
-- [ ] **Quest 1.5: Từ khóa Dọn dẹp tài nguyên tự động (`defer`)**
-  - [ ] Cú pháp: `defer <statement>;` (Ví dụ: `defer tcp_close(sock);`, `defer free(ptr);`).
-  - [ ] Compiler tự động chèn các câu lệnh dọn dẹp vào trước mọi câu lệnh `return` hoặc trước khi luồng thực thi đi ra khỏi scope hiện tại.
+- [x] **Quest 1.5: Từ khóa Dọn dẹp tài nguyên tự động (`defer`)**
+  - [x] Cú pháp: `defer <statement>;` (Ví dụ: `defer tcp_close(sock);`, `defer mem_free(ptr, sz);`).
+  - [x] Compiler tự động chèn các câu lệnh dọn dẹp theo thứ tự LIFO vào trước mọi câu lệnh `return`, `break`, `continue` hoặc trước khi thoát khỏi scope hiện tại.
 
 ---
 

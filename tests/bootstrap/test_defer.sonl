@@ -1,0 +1,52 @@
+// Test suite for deterministic LIFO 'defer' statement cleanup
+import "std/mem/heap.sonl";
+
+fn helper_early_return(log: *mut i32) -> i32 {
+    defer log[0] = (log[0] * 10) + 1;
+    defer log[0] = (log[0] * 10) + 2;
+
+    if log[0] == 0 {
+        // LIFO cleanup runs 2 then 1 before returning 42
+        return 42;
+    }
+    return 99;
+}
+
+fn main() -> i32 {
+    val mem: *mut u8 = alloc(16, 4);
+    val log: *mut i32 = mem as *mut i32;
+    log[0] = 0;
+    log[1] = 0;
+
+    // 1. Test early return executes defers in LIFO order (2 -> 1 => 21)
+    val ret = helper_early_return(log);
+    if ret != 42 {
+        mem_free(mem, 16);
+        return 1;
+    }
+    if log[0] != 21 {
+        mem_free(mem, 16);
+        return 2;
+    }
+
+    // 2. Test nested block exit + loop break with defer
+    {
+        defer log[1] = (log[1] * 10) + 7;
+        for i in 0..5 {
+            defer log[1] = (log[1] * 10) + 3;
+            if i == 1 {
+                break;
+            }
+        }
+    }
+    // Iteration 0 appends 3 -> log[1] = 3
+    // Iteration 1 hits break -> loop defer appends 3 -> log[1] = 33
+    // Block exit appends 7 -> log[1] = 337
+    if log[1] != 337 {
+        mem_free(mem, 16);
+        return 3;
+    }
+
+    defer mem_free(mem, 16);
+    return 0;
+}

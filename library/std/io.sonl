@@ -20,3 +20,10 @@ pub fn formatter_write_bytes(f: Formatter, count: usize) -> Formatter {
 pub fn formatter_is_full(f: Formatter) -> bool {
     return f.bytes_written >= f.buffer_capacity;
 }
+
+pub fn print(s: [u8]) -> void { son_io_print(s); }
+pub fn println(s: [u8]) -> void { son_io_println(s); }
+pub fn eprintln(s: [u8]) -> void { son_io_eprintln(s); }
+pub fn print_i32(v: i32) -> void { son_io_print_i32(v); }
+pub fn print_i64(v: i64) -> void { son_io_print_i64(v); }
+pub fn print_f64(v: f64) -> void { son_io_print_f64(v); }

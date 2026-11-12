@@ -41,6 +41,7 @@ typedef enum {
     TOKEN_KW_AS,
     TOKEN_KW_IMPORT,
     TOKEN_KW_EXTERN,
+    TOKEN_KW_DEFER,
 
     // Operators and Punctuators
     TOKEN_PLUS,         // +
@@ -71,6 +72,7 @@ typedef enum {
     TOKEN_SEMICOLON,    // ;
     TOKEN_COMMA,        // ,
     TOKEN_DOT,          // .
+    TOKEN_DOT_DOT,      // ..
     TOKEN_LPAREN,       // (
     TOKEN_RPAREN,       // )
     TOKEN_LBRACE,       // {

@@ -2,7 +2,7 @@
   <img src="icon.png" alt="SonLang Logo" width="180"/>
 </p>
 
-<h1 align="center">SonLang v1.3.0</h1>
+<h1 align="center">SonLang v1.4.0</h1>
 
 <p align="center">
   <strong>An Independent, High-Performance, AI-Native Systems Programming Language</strong>
@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://marketplace.visualstudio.com/items?itemName=SonLang.sonlang"><img src="https://img.shields.io/badge/VS_Code_Extension-SonLang_v0.3.0-red.svg" alt="VS Code Extension"/></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/Performance-Zero--Cost-brightgreen.svg" alt="Performance"/></a>
-  <a href="#memory-safety-model"><img src="https://img.shields.io/badge/Release-v1.3.0_Production_Ready-blue.svg" alt="Release"/></a>
+  <a href="#memory-safety-model"><img src="https://img.shields.io/badge/Release-v1.4.0_Production_Ready-blue.svg" alt="Release"/></a>
   <a href="#native-self-host-backend"><img src="https://img.shields.io/badge/Backend-Native_x86--64_%2B_PE%2FELF-purple.svg" alt="Native Backend"/></a>
   <a href="#ai-native-architecture"><img src="https://img.shields.io/badge/AI--Native-Tensor_%2B_Channel_%2B_DAG-brightgreen.svg" alt="AI Native"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0_%2F_MIT-lightgrey.svg" alt="License"/></a>
@@ -23,24 +23,18 @@
 
 ---
 
-## What's New in v1.3.0
+## What's New in v1.4.0
 
-- 🌐 **Non-Blocking I/O & Event Multiplexing**:
-  - `tcp_set_nonblocking(bool)` via `ioctlsocket(FIONBIO)` / `fcntl(O_NONBLOCK)`.
-  - `tcp_set_nodelay(bool)` disabling Nagle's algorithm for low-latency game/network loops.
-  - `tcp_poll(events, timeout)` via `WSAPoll` (Windows) / `poll` (POSIX) for event-driven server engines.
-- 🧵 **Native OS Threading & Fast Mutex**:
-  - `thread_spawn` and `thread_join` backed by Win32 `CreateThread` / POSIX `pthread_create`.
-  - Native `Mutex` primitive (`CRITICAL_SECTION` / `pthread_mutex_t`).
-  - Microsecond precision tick timers `time_nanos()` and `sleep_us(us)`.
-- 📦 **Binary ByteBuffer, Bitwise Packing & Minecraft NBT**:
-  - Dynamic self-resizing `ByteBuffer` with Big-Endian `read/write_i16/i32/i64_be` and VarInt.
-  - Minecraft NBT v1.20 Tag Serializer (`TAG_Compound`, `TAG_Int`, `TAG_String`, etc.).
-  - 64-bit Bit manipulation intrinsics (`bswap32`, `bswap64`, `extract_bits_u64`).
-  - Zero-dependency byte stream compression & decompression (`library/std/compress/zlib.sonl`).
-- 📁 **Random-Access File I/O (Region/Anvil .mca)**:
-  - 64-bit file positioning: `file_open`, `file_seek` (`SEEK_SET/CUR/END`), `file_tell`, `file_read_exact`, `file_write_exact`.
-- 🧪 **70 Automated Test Workloads**: 100% verified pass across all suites and self-host stages.
+- 🛡️ **Deterministic Resource Cleanup (`defer`)**:
+  - `defer <stmt>;` executes cleanup statements in strict LIFO order before scope exit, early `return`, `break`, or `continue` without garbage collection overhead.
+- 🔁 **Ergonomic Range Loops & Control Flow (`for .. in ..`, `break`, `continue`)**:
+  - `for i in 0..10 { ... }` range iteration with static loop-scope type checking for `break` and `continue`.
+- 🖨️ **Native Console I/O (`std/io.sonl`)**:
+  - Real `print`, `println`, `eprintln`, `print_i32`, `print_i64`, and `print_f64` backed by slice-safe stdout/stderr output.
+- 🌍 **Global SDK Resolution & Standalone CLI (`son.exe`)**:
+  - Run `son run`, `son build`, `son check`, and `son new` directly in **CMD, Bash, Zsh, or PowerShell** from any directory.
+  - `import "std/..."`, `"core/..."`, and `"library/..."` auto-resolve globally via `SON_HOME` or relative to `son.exe` (zero need to copy `library/` into projects).
+- 🧪 **74 Automated Test Suites**: Positive + negative semantic/borrow-checker tests verified at 100% PASS.
 
 ---
 

@@ -9,6 +9,7 @@ void son_sema_init(SonSema *sema, SonArena *arena) {
     sema->error_count = 0;
     sema->current_module = NULL;
     sema->current_expected_type = NULL;
+    sema->loop_depth = 0;
 
     sema->global_scope = (SonScope*)son_arena_alloc(arena, sizeof(SonScope), sizeof(void*));
     memset(sema->global_scope, 0, sizeof(SonScope));
@@ -265,7 +266,10 @@ void son_sema_init(SonSema *sema, SonArena *arena) {
         define_symbol(sema->global_scope, s);
     }
 
-    const char *names_void[] = {"son_mutex_lock", "son_mutex_unlock", "son_mutex_destroy", "son_file_close_handle", "son_sleep_us"};
+    const char *names_void[] = {
+        "son_mutex_lock", "son_mutex_unlock", "son_mutex_destroy", "son_file_close_handle", "son_sleep_us",
+        "son_io_print", "son_io_println", "son_io_eprintln", "son_io_print_i32", "son_io_print_i64", "son_io_print_f64"
+    };
     for (size_t i = 0; i < sizeof(names_void)/sizeof(names_void[0]); i++) {
         SonDecl *d = (SonDecl*)son_arena_alloc(arena, sizeof(SonDecl), sizeof(void*));
         memset(d, 0, sizeof(SonDecl));
@@ -737,10 +741,58 @@ static void analyze_stmt(SonSema *sema, SonStmt *stmt) {
                 sema->error_count++;
             }
             push_scope(sema, false, NULL);
+            sema->loop_depth++;
             for (size_t i = 0; i < stmt->while_stmt.body.stmt_count; i++) {
                 analyze_stmt(sema, stmt->while_stmt.body.stmts[i]);
             }
+            sema->loop_depth--;
             pop_scope(sema);
+            break;
+        }
+
+        case STMT_FOR: {
+            SonType *start_type = analyze_expr(sema, stmt->for_stmt.start);
+            SonType *end_type = analyze_expr(sema, stmt->for_stmt.end);
+            SonType *loop_var_type = end_type ? end_type : start_type;
+            if (stmt->for_stmt.end && stmt->for_stmt.end->kind == EXPR_INT_LITERAL && start_type) {
+                loop_var_type = start_type;
+            }
+            if (!loop_var_type) {
+                loop_var_type = (SonType*)son_arena_alloc(sema->arena, sizeof(SonType), sizeof(void*));
+                loop_var_type->kind = TYPE_I32;
+            }
+
+            push_scope(sema, false, NULL);
+            SonSymbol *idx_sym = alloc_symbol(sema->arena);
+            idx_sym->kind = SYM_VARIABLE;
+            idx_sym->name = stmt->for_stmt.var_name;
+            idx_sym->type = loop_var_type;
+            idx_sym->loc = stmt->loc;
+            idx_sym->is_mut = false;
+            define_symbol(sema->current_scope, idx_sym);
+
+            sema->loop_depth++;
+            for (size_t i = 0; i < stmt->for_stmt.body.stmt_count; i++) {
+                analyze_stmt(sema, stmt->for_stmt.body.stmts[i]);
+            }
+            sema->loop_depth--;
+            pop_scope(sema);
+            break;
+        }
+
+        case STMT_BREAK:
+        case STMT_CONTINUE: {
+            if (sema->loop_depth <= 0) {
+                son_error_report(stmt->loc, "'%s' statement used outside of a loop",
+                                 stmt->kind == STMT_BREAK ? "break" : "continue");
+                sema->has_error = true;
+                sema->error_count++;
+            }
+            break;
+        }
+
+        case STMT_DEFER: {
+            analyze_stmt(sema, stmt->defer_stmt.stmt);
             break;
         }
 

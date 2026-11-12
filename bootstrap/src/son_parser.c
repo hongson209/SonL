@@ -533,6 +533,13 @@ static SonBlock parse_block(SonParser *parser) {
     block.stmt_count = 0;
 
     while (!check(parser, TOKEN_RBRACE) && !check(parser, TOKEN_EOF)) {
+        if (block.stmt_count >= cap) {
+            size_t new_cap = cap * 2;
+            SonStmt **new_stmts = (SonStmt**)son_arena_alloc(parser->arena, sizeof(SonStmt*) * new_cap, sizeof(void*));
+            memcpy(new_stmts, block.stmts, sizeof(SonStmt*) * block.stmt_count);
+            block.stmts = new_stmts;
+            cap = new_cap;
+        }
         block.stmts[block.stmt_count++] = parse_statement(parser);
     }
     expect(parser, TOKEN_RBRACE, "to close block");
@@ -592,6 +599,42 @@ static SonStmt* parse_statement(SonParser *parser) {
         stmt->kind = STMT_WHILE;
         stmt->while_stmt.cond = parse_expression(parser);
         stmt->while_stmt.body = parse_block(parser);
+        return stmt;
+    }
+
+    if (match(parser, TOKEN_KW_FOR, NULL)) {
+        stmt->kind = STMT_FOR;
+        SonToken var_tok = expect(parser, TOKEN_IDENTIFIER, "for loop variable");
+        stmt->for_stmt.var_name = var_tok.text;
+        expect(parser, TOKEN_KW_IN, "in 'for' range loop");
+        stmt->for_stmt.start = parse_expression(parser);
+        expect(parser, TOKEN_DOT_DOT, "'..' in 'for' range loop");
+        stmt->for_stmt.end = parse_expression(parser);
+        stmt->for_stmt.body = parse_block(parser);
+        return stmt;
+    }
+
+    if (match(parser, TOKEN_KW_BREAK, NULL)) {
+        stmt->kind = STMT_BREAK;
+        expect(parser, TOKEN_SEMICOLON, "after 'break'");
+        return stmt;
+    }
+
+    if (match(parser, TOKEN_KW_CONTINUE, NULL)) {
+        stmt->kind = STMT_CONTINUE;
+        expect(parser, TOKEN_SEMICOLON, "after 'continue'");
+        return stmt;
+    }
+
+    if (match(parser, TOKEN_KW_DEFER, NULL)) {
+        stmt->kind = STMT_DEFER;
+        stmt->defer_stmt.stmt = parse_statement(parser);
+        return stmt;
+    }
+
+    if (check(parser, TOKEN_LBRACE)) {
+        stmt->kind = STMT_BLOCK;
+        stmt->block = parse_block(parser);
         return stmt;
     }
 

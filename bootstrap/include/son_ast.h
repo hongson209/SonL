@@ -150,10 +150,12 @@ typedef enum {
     STMT_RETURN,
     STMT_IF,
     STMT_WHILE,
+    STMT_FOR,
     STMT_MATCH,
     STMT_BLOCK,
     STMT_BREAK,
     STMT_CONTINUE,
+    STMT_DEFER,
 } SonStmtKind;
 
 struct SonStmt {
@@ -189,6 +191,17 @@ struct SonStmt {
             SonExpr *cond;
             SonBlock body;
         } while_stmt;
+
+        struct {
+            SonStringSlice var_name;
+            SonExpr *start;
+            SonExpr *end;
+            SonBlock body;
+        } for_stmt;
+
+        struct {
+            SonStmt *stmt;
+        } defer_stmt;
 
         struct {
             SonExpr *expr;

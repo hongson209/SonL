@@ -45,11 +45,12 @@ static char* read_file_to_string(const char *path, size_t *out_len) {
 }
 
 static void print_help(void) {
-    printf("SonLang Native Compiler & Toolchain (son) v1.3.0\n");
+    printf("SonLang Native Compiler & Toolchain (son) v1.4.0\n");
     printf("SDK / Standard Library Root: %s\n\n", son_get_sdk_root());
     printf("Usage:\n");
     printf("  son run <file.sonl> [options]     Compile and execute immediately (no PowerShell needed)\n");
     printf("  son build <file.sonl> [options]   Compile to native executable (--native for LLVM IR)\n");
+    printf("  son check <file.sonl>             Fast syntax, type & borrow check without codegen\n");
     printf("  son new <project_name>            Create a clean SonLang project (no library copy needed)\n");
     printf("  son emit-llvm <file.sonl>         Emit native LLVM IR (.ll)\n");
     printf("  son emit-ir <file.sonl>           Emit SSA SonIR\n");
@@ -345,8 +346,35 @@ int main(int argc, char **argv) {
         return 0;
     }
     if (strcmp(cmd, "--version") == 0 || strcmp(cmd, "version") == 0) {
-        printf("SonLang Toolchain v1.3.0\n");
+        printf("SonLang Toolchain v1.4.0\n");
         return 0;
+    }
+    if (strcmp(cmd, "check") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "error: missing source file. Usage: son check <file.sonl>\n");
+            return 1;
+        }
+        size_t source_len = 0;
+        char *source = read_file_to_string(argv[2], &source_len);
+        if (!source) return 1;
+        SonArena arena;
+        son_arena_init(&arena, 256 * 1024);
+        SonParser parser;
+        son_parser_init(&parser, &arena, argv[2], source, source_len);
+        SonModule *module = son_parser_parse_module(&parser);
+        if (parser.has_error || !module) {
+            free(source);
+            son_arena_free_all(&arena);
+            return 1;
+        }
+        SonSema sema;
+        son_sema_init(&sema, &arena);
+        bool sema_ok = son_sema_analyze_module(&sema, module);
+        int rc = (sema_ok && !sema.has_error) ? 0 : 1;
+        if (rc == 0) printf("Check OK: %s\n", argv[2]);
+        free(source);
+        son_arena_free_all(&arena);
+        return rc;
     }
     if (strcmp(cmd, "new") == 0) {
         return cmd_new_project(argc >= 3 ? argv[2] : NULL);

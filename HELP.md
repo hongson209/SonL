@@ -8,10 +8,10 @@ Welcome to **SonLang**! This guide provides everything human developers and AI a
 
 ### Hello World
 ```sonl
-import "library/std/io.sonl";
+import "std/io.sonl";
 
 fn main() -> i32 {
-    // Return 0 for success
+    println("Hello, SonLang!");
     return 0;
 }
 ```
@@ -44,11 +44,21 @@ fn compute_area(width: i32, height: i32) -> i32 {
 // If-else
 val status = if is_ready { 1 } else { 0 };
 
+// Range For Loop with break/continue
+for i in 0..10 {
+    if (i % 2) == 0 { continue; }
+    if i > 7 { break; }
+}
+
 // While Loop
 var i: usize = 0;
 while i < 10 {
     i = i + 1;
 }
+
+// Deterministic Cleanup (LIFO on scope exit or return)
+val buf = alloc(64, 8);
+defer mem_free(buf, 64);
 
 // Pattern Matching
 val result = match action {

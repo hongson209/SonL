@@ -81,7 +81,10 @@ $tests = @(
     "tests/bootstrap/test_bytebuffer.sonl",
     "tests/bootstrap/test_nbt.sonl",
     "tests/bootstrap/test_file_seek.sonl",
-    "tests/bootstrap/test_bits.sonl"
+    "tests/bootstrap/test_bits.sonl",
+    "tests/bootstrap/test_loops_break_continue.sonl",
+    "tests/bootstrap/test_defer.sonl",
+    "tests/bootstrap/test_io_print.sonl"
 )
 
 if (-not (Test-Path "build")) {
@@ -121,10 +124,11 @@ foreach ($t in $tests) {
 $negative_tests = @(
     "tests/bootstrap/borrow_fail_multiple_mut.sonl",
     "tests/bootstrap/borrow_fail_assign_while_borrowed.sonl",
-    "tests/bootstrap/borrow_fail_call_conflict.sonl"
+    "tests/bootstrap/borrow_fail_call_conflict.sonl",
+    "tests/bootstrap/loop_fail_break_outside.sonl"
 )
 
-Write-Host "`nRunning Negative Borrow Checker Tests..." -ForegroundColor Cyan
+Write-Host "`nRunning Negative Safety & Semantic Tests..." -ForegroundColor Cyan
 foreach ($nt in $negative_tests) {
     $oldEAP = $ErrorActionPreference
     $ErrorActionPreference = "SilentlyContinue"

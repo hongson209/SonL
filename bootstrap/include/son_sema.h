@@ -43,6 +43,7 @@ typedef struct {
     SonScope *current_scope;
     SonModule *current_module;
     SonType *current_expected_type;
+    int loop_depth;
     bool has_error;
     size_t error_count;
 } SonSema;

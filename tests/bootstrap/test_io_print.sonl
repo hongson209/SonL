@@ -1,0 +1,11 @@
+// Test suite for Console I/O runtime (print, println, print_i32, print_f64)
+import "std/io.sonl";
+
+fn main() -> i32 {
+    print("SonLang v1.4.0 Console I/O: ");
+    print_i32(42);
+    print(" | ");
+    print_f64(3.14);
+    println("");
+    return 0;
+}

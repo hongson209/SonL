@@ -4,6 +4,10 @@ void son_codegen_init(SonCodeGen *gen, FILE *output) {
     gen->out = output;
     gen->indent_level = 0;
     gen->has_error = false;
+    gen->current_fn_ret_type = NULL;
+    gen->defer_top = 0;
+    gen->fn_defer_base = 0;
+    gen->loop_defer_base = 0;
 }
 
 static void print_indent(SonCodeGen *gen) {
@@ -327,12 +331,29 @@ static void emit_expr(SonCodeGen *gen, SonExpr *expr) {
 
 static void emit_stmt(SonCodeGen *gen, SonStmt *stmt);
 
+static void emit_defers_down_to(SonCodeGen *gen, int base) {
+    for (int i = gen->defer_top - 1; i >= base; i--) {
+        emit_stmt(gen, gen->defer_stack[i]);
+    }
+}
+
 static void emit_block(SonCodeGen *gen, SonBlock block) {
+    int saved_defer_top = gen->defer_top;
     fprintf(gen->out, "{\n");
     gen->indent_level++;
+    bool terminated = false;
     for (size_t i = 0; i < block.stmt_count; i++) {
         emit_stmt(gen, block.stmts[i]);
+        SonStmtKind k = block.stmts[i] ? block.stmts[i]->kind : STMT_EXPR;
+        if (k == STMT_RETURN || k == STMT_BREAK || k == STMT_CONTINUE) {
+            terminated = true;
+            break;
+        }
     }
+    if (!terminated && gen->defer_top > saved_defer_top) {
+        emit_defers_down_to(gen, saved_defer_top);
+    }
+    gen->defer_top = saved_defer_top;
     gen->indent_level--;
     print_indent(gen);
     fprintf(gen->out, "}\n");
@@ -340,6 +361,12 @@ static void emit_block(SonCodeGen *gen, SonBlock block) {
 
 static void emit_stmt(SonCodeGen *gen, SonStmt *stmt) {
     if (!stmt) return;
+    if (stmt->kind == STMT_DEFER) {
+        if (gen->defer_top < SON_MAX_DEFER_STACK) {
+            gen->defer_stack[gen->defer_top++] = stmt->defer_stmt.stmt;
+        }
+        return;
+    }
     print_indent(gen);
 
     switch (stmt->kind) {
@@ -373,6 +400,32 @@ static void emit_stmt(SonCodeGen *gen, SonStmt *stmt) {
             fprintf(gen->out, ";\n");
             break;
         case STMT_RETURN:
+            if (gen->defer_top > gen->fn_defer_base) {
+                if (stmt->ret.expr && gen->current_fn_ret_type && gen->current_fn_ret_type->kind != TYPE_VOID) {
+                    fprintf(gen->out, "{ ");
+                    emit_type(gen, gen->current_fn_ret_type);
+                    fprintf(gen->out, " _son_ret = ");
+                    emit_expr(gen, stmt->ret.expr);
+                    fprintf(gen->out, ";\n");
+                    gen->indent_level++;
+                    emit_defers_down_to(gen, gen->fn_defer_base);
+                    print_indent(gen);
+                    fprintf(gen->out, "return _son_ret;\n");
+                    gen->indent_level--;
+                    print_indent(gen);
+                    fprintf(gen->out, "}\n");
+                } else {
+                    fprintf(gen->out, "{\n");
+                    gen->indent_level++;
+                    emit_defers_down_to(gen, gen->fn_defer_base);
+                    print_indent(gen);
+                    fprintf(gen->out, "return;\n");
+                    gen->indent_level--;
+                    print_indent(gen);
+                    fprintf(gen->out, "}\n");
+                }
+                break;
+            }
             fprintf(gen->out, "return");
             if (stmt->ret.expr) {
                 fprintf(gen->out, " ");
@@ -397,7 +450,9 @@ static void emit_stmt(SonCodeGen *gen, SonStmt *stmt) {
                 emit_block(gen, stmt->if_stmt.else_block);
             }
             break;
-        case STMT_WHILE:
+        case STMT_WHILE: {
+            int prev_loop_base = gen->loop_defer_base;
+            gen->loop_defer_base = gen->defer_top;
             fprintf(gen->out, "while ");
             if (stmt->while_stmt.cond->kind == EXPR_BINARY) {
                 emit_expr(gen, stmt->while_stmt.cond);
@@ -408,6 +463,62 @@ static void emit_stmt(SonCodeGen *gen, SonStmt *stmt) {
                 fprintf(gen->out, ") ");
             }
             emit_block(gen, stmt->while_stmt.body);
+            gen->loop_defer_base = prev_loop_base;
+            break;
+        }
+        case STMT_FOR: {
+            int prev_loop_base = gen->loop_defer_base;
+            gen->loop_defer_base = gen->defer_top;
+            SonType *lt = stmt->for_stmt.end && stmt->for_stmt.end->inferred_type
+                ? stmt->for_stmt.end->inferred_type
+                : (stmt->for_stmt.start ? stmt->for_stmt.start->inferred_type : NULL);
+            if (stmt->for_stmt.end && stmt->for_stmt.end->kind == EXPR_INT_LITERAL && stmt->for_stmt.start && stmt->for_stmt.start->inferred_type) {
+                lt = stmt->for_stmt.start->inferred_type;
+            }
+            fprintf(gen->out, "{ ");
+            emit_type(gen, lt);
+            fprintf(gen->out, " _son_for_end = ");
+            emit_expr(gen, stmt->for_stmt.end);
+            fprintf(gen->out, "; for (");
+            emit_type(gen, lt);
+            fprintf(gen->out, " %.*s = ", (int)stmt->for_stmt.var_name.length, stmt->for_stmt.var_name.data);
+            emit_expr(gen, stmt->for_stmt.start);
+            fprintf(gen->out, "; %.*s < _son_for_end; %.*s++) ",
+                    (int)stmt->for_stmt.var_name.length, stmt->for_stmt.var_name.data,
+                    (int)stmt->for_stmt.var_name.length, stmt->for_stmt.var_name.data);
+            emit_block(gen, stmt->for_stmt.body);
+            print_indent(gen);
+            fprintf(gen->out, "}\n");
+            gen->loop_defer_base = prev_loop_base;
+            break;
+        }
+        case STMT_BREAK:
+            if (gen->defer_top > gen->loop_defer_base) {
+                fprintf(gen->out, "{\n");
+                gen->indent_level++;
+                emit_defers_down_to(gen, gen->loop_defer_base);
+                print_indent(gen);
+                fprintf(gen->out, "break;\n");
+                gen->indent_level--;
+                print_indent(gen);
+                fprintf(gen->out, "}\n");
+            } else {
+                fprintf(gen->out, "break;\n");
+            }
+            break;
+        case STMT_CONTINUE:
+            if (gen->defer_top > gen->loop_defer_base) {
+                fprintf(gen->out, "{\n");
+                gen->indent_level++;
+                emit_defers_down_to(gen, gen->loop_defer_base);
+                print_indent(gen);
+                fprintf(gen->out, "continue;\n");
+                gen->indent_level--;
+                print_indent(gen);
+                fprintf(gen->out, "}\n");
+            } else {
+                fprintf(gen->out, "continue;\n");
+            }
             break;
         case STMT_MATCH:
             fprintf(gen->out, "switch ((");
@@ -712,6 +823,27 @@ bool son_codegen_emit_module(SonCodeGen *gen, SonModule *module) {
     fprintf(gen->out, "static inline void son_file_close_handle(int64_t handle) {\n");
     fprintf(gen->out, "    if (handle) fclose((FILE*)(intptr_t)handle);\n");
     fprintf(gen->out, "}\n\n");
+    fprintf(gen->out, "// Console I/O Runtime Helpers\n");
+    fprintf(gen->out, "static inline void son_io_print(SonSlice_u8 s) {\n");
+    fprintf(gen->out, "    if (s.data && s.len > 0) fwrite(s.data, 1, s.len, stdout);\n");
+    fprintf(gen->out, "}\n\n");
+    fprintf(gen->out, "static inline void son_io_println(SonSlice_u8 s) {\n");
+    fprintf(gen->out, "    if (s.data && s.len > 0) fwrite(s.data, 1, s.len, stdout);\n");
+    fprintf(gen->out, "    fputc('\\n', stdout);\n");
+    fprintf(gen->out, "}\n\n");
+    fprintf(gen->out, "static inline void son_io_eprintln(SonSlice_u8 s) {\n");
+    fprintf(gen->out, "    if (s.data && s.len > 0) fwrite(s.data, 1, s.len, stderr);\n");
+    fprintf(gen->out, "    fputc('\\n', stderr);\n");
+    fprintf(gen->out, "}\n\n");
+    fprintf(gen->out, "static inline void son_io_print_i32(int32_t v) {\n");
+    fprintf(gen->out, "    printf(\"%%d\", v);\n");
+    fprintf(gen->out, "}\n\n");
+    fprintf(gen->out, "static inline void son_io_print_i64(int64_t v) {\n");
+    fprintf(gen->out, "    printf(\"%%lld\", (long long)v);\n");
+    fprintf(gen->out, "}\n\n");
+    fprintf(gen->out, "static inline void son_io_print_f64(double v) {\n");
+    fprintf(gen->out, "    printf(\"%%g\", v);\n");
+    fprintf(gen->out, "}\n\n");
     fprintf(gen->out, "#if defined(_WIN32)\n");
     fprintf(gen->out, "static inline int64_t son_time_now_ticks(void) {\n");
     fprintf(gen->out, "    LARGE_INTEGER val; QueryPerformanceCounter(&val);\n");
@@ -896,7 +1028,11 @@ bool son_codegen_emit_module(SonCodeGen *gen, SonModule *module) {
                         decl->func.params[p].name.data);
             }
             fprintf(gen->out, ") ");
+            gen->current_fn_ret_type = decl->func.return_type;
+            gen->fn_defer_base = gen->defer_top;
+            gen->loop_defer_base = gen->defer_top;
             emit_block(gen, decl->func.body);
+            gen->current_fn_ret_type = NULL;
             fprintf(gen->out, "\n");
         }
     }

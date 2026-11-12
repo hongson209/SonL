@@ -99,6 +99,7 @@ static SonTokenKind check_keyword(SonStringSlice text) {
         {"as", TOKEN_KW_AS},
         {"import", TOKEN_KW_IMPORT},
         {"extern", TOKEN_KW_EXTERN},
+        {"defer", TOKEN_KW_DEFER},
     };
 
     for (size_t i = 0; i < sizeof(keywords) / sizeof(keywords[0]); i++) {
@@ -352,7 +353,15 @@ SonToken son_lexer_next_token(SonLexer *lexer) {
             break;
         case ';': token.kind = TOKEN_SEMICOLON; break;
         case ',': token.kind = TOKEN_COMMA; break;
-        case '.': token.kind = TOKEN_DOT; break;
+        case '.':
+            if (lexer_peek(lexer) == '.') {
+                lexer_advance(lexer);
+                token.text.length = 2;
+                token.kind = TOKEN_DOT_DOT;
+            } else {
+                token.kind = TOKEN_DOT;
+            }
+            break;
         case '(': token.kind = TOKEN_LPAREN; break;
         case ')': token.kind = TOKEN_RPAREN; break;
         case '{': token.kind = TOKEN_LBRACE; break;
@@ -405,6 +414,7 @@ const char* son_token_kind_str(SonTokenKind kind) {
         case TOKEN_KW_AS: return "'as'";
         case TOKEN_KW_IMPORT: return "'import'";
         case TOKEN_KW_EXTERN: return "'extern'";
+        case TOKEN_KW_DEFER: return "'defer'";
         case TOKEN_PLUS: return "'+'";
         case TOKEN_MINUS: return "'-'";
         case TOKEN_STAR: return "'*'";
@@ -433,6 +443,7 @@ const char* son_token_kind_str(SonTokenKind kind) {
         case TOKEN_SEMICOLON: return "';'";
         case TOKEN_COMMA: return "','";
         case TOKEN_DOT: return "'.'";
+        case TOKEN_DOT_DOT: return "'..'";
         case TOKEN_LPAREN: return "'('";
         case TOKEN_RPAREN: return "')'";
         case TOKEN_LBRACE: return "'{'";
